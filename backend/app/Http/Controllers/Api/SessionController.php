@@ -70,14 +70,14 @@ class SessionController extends Controller
             'description' => $request->description,
             'type' => $request->type,
             'date' => $request->date,
-            'start_time' => $request->date . ' ' . $request->start_time,
-            'end_time' => $request->date . ' ' . $request->end_time,
+            'start_time' => $request->start_time,
+            'end_time' => $request->end_time,
             'location' => $request->location,
             'max_participants' => $request->max_participants,
             'current_participants' => 0,
             'price' => $request->price,
             'skill_level_required' => $request->skill_level_required ?? 'all',
-            'is_active' => true,
+            'is_active' => $request->is_active ?? true,
             'created_by' => $request->user()->_id ?? null,
         ]);
 
@@ -131,15 +131,6 @@ class SessionController extends Controller
         }
 
         $updateData = $request->all();
-
-        // Handle time updates
-        if ($request->has('date') && $request->has('start_time')) {
-            $updateData['start_time'] = $request->date . ' ' . $request->start_time;
-        }
-
-        if ($request->has('date') && $request->has('end_time')) {
-            $updateData['end_time'] = $request->date . ' ' . $request->end_time;
-        }
 
         $session->update($updateData);
 

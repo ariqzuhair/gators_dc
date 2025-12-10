@@ -28,15 +28,21 @@ A full-stack web application for managing a dodgeball club, allowing players to 
 - ✅ User registration and authentication
 - ✅ Browse available sessions (drop-in, training, tournaments)
 - ✅ Register for sessions
+- ✅ Semester-based membership system (RM 15/semester)
+- ✅ Guest drop-in option for non-members (RM 3/session)
+- ✅ Payment receipt upload
 - ✅ View and manage registrations
-- ✅ Profile management
+- ✅ Profile management with membership history
 - ✅ Filter sessions by type, skill level, and date
 
 ### For Administrators
 - ✅ Create and manage sessions
 - ✅ View all players and registrations
 - ✅ Monitor session capacity
-- ✅ Admin dashboard
+- ✅ Verify membership payments (RM 15)
+- ✅ Verify guest drop-in payments (RM 3)
+- ✅ Semester membership management
+- ✅ Admin dashboard with payment tabs
 
 ## 🚀 Getting Started
 

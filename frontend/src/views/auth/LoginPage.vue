@@ -187,8 +187,14 @@ const handleLogin = async () => {
     // Wait a tiny bit for store to fully update
     await new Promise(resolve => setTimeout(resolve, 100))
     
-    // Navigate to home
-    router.push('/')
+    // Role-based redirect
+    if (authStore.isAdmin) {
+      console.log('Redirecting to admin dashboard')
+      router.push('/admin')
+    } else {
+      console.log('Redirecting to home page')
+      router.push('/')
+    }
   } catch (err) {
     console.error('Login error:', err)
     error.value = err.response?.data?.message || 'Invalid credentials'

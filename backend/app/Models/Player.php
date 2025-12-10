@@ -25,6 +25,7 @@ class Player extends Model
         'medical_conditions',
         'profile_image',
         'is_active',
+        'semester_memberships', // Array of semester membership records
     ];
 
     /**
@@ -36,6 +37,7 @@ class Player extends Model
         'membership_start_date' => 'datetime',
         'membership_end_date' => 'datetime',
         'is_active' => 'boolean',
+        'semester_memberships' => 'array',
     ];
 
     /**
@@ -55,12 +57,38 @@ class Player extends Model
     }
 
     /**
-     * Check if membership is active
+     * Check if membership is active for current semester
      */
     public function hasActiveMembership(): bool
     {
-        return $this->is_active && 
-               $this->membership_end_date && 
-               $this->membership_end_date->isFuture();
+        if (!$this->is_active) {
+            return false;
+        }
+
+        // Check semester-based membership
+        if (!empty($this->semester_memberships)) {
+            $now = new \DateTime();
+            $currentYear = (int)$now->format('Y');
+            $currentMonth = (int)$now->format('n');
+            
+            // Determine current semester: 1-6 = Semester 1, 7-12 = Semester 2
+            $currentSemester = ($currentMonth >= 1 && $currentMonth <= 6) ? 'Semester 1' : 'Semester 2';
+            
+            // Check if user has active membership for current semester
+            foreach ($this->semester_memberships as $membership) {
+                if ($membership['semester'] === $currentSemester && 
+                    $membership['year'] === $currentYear && 
+                    $membership['status'] === 'active') {
+                    return true;
+                }
+            }
+        }
+        
+        // Fallback to old membership system if no semester memberships
+        if ($this->membership_end_date) {
+            return $this->membership_end_date->isFuture();
+        }
+        
+        return false;
     }
 }

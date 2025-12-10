@@ -6,6 +6,8 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\PlayerController;
 use App\Http\Controllers\Api\SessionController;
 use App\Http\Controllers\Api\RegistrationController;
+use App\Http\Controllers\Api\UserController;
+use App\Http\Controllers\Api\MembershipController;
 
 /*
 |--------------------------------------------------------------------------
@@ -27,6 +29,26 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/me', [AuthController::class, 'me']);
 
+    // User management routes (admin only)
+    Route::get('/users', [UserController::class, 'index']);
+    Route::get('/users/{id}', [UserController::class, 'show']);
+    Route::put('/users/{id}', [UserController::class, 'update']);
+    Route::delete('/users/{id}', [UserController::class, 'destroy']);
+
+    // Membership management routes (admin only)
+    Route::get('/memberships', [MembershipController::class, 'index']);
+    Route::put('/memberships/{userId}/semester', [MembershipController::class, 'updateSemester']);
+    Route::get('/memberships/semesters', [MembershipController::class, 'getSemesters']);
+    Route::post('/memberships/start-semester', [MembershipController::class, 'startSemester']);
+    Route::post('/memberships/end-semester', [MembershipController::class, 'endSemester']);
+    Route::post('/memberships/bulk-renew', [MembershipController::class, 'bulkRenew']);
+    
+    // Payment receipt routes
+    Route::post('/memberships/payment-receipt', [MembershipController::class, 'uploadPaymentReceipt']);
+    Route::get('/memberships/payment-receipts', [MembershipController::class, 'getPaymentReceipts']);
+    Route::get('/memberships/pending-receipts', [MembershipController::class, 'getPendingReceipts']);
+    Route::post('/memberships/{userId}/verify-payment', [MembershipController::class, 'verifyPaymentReceipt']);
+
     // Player routes
     Route::apiResource('players', PlayerController::class);
 
@@ -39,6 +61,11 @@ Route::middleware('auth:sanctum')->group(function () {
     // Registration routes
     Route::post('/registrations/{id}/cancel', [RegistrationController::class, 'cancel']);
     Route::apiResource('registrations', RegistrationController::class);
+    
+    // Guest payment routes
+    Route::get('/registrations/guest-payments/pending', [RegistrationController::class, 'getPendingGuestPayments']);
+    Route::post('/registrations/{id}/verify-guest-payment', [RegistrationController::class, 'verifyGuestPayment']);
+    Route::get('/players/{id}/guest-payment-stats', [RegistrationController::class, 'getGuestPaymentStats']);
 });
 
 Route::get('/', function () {

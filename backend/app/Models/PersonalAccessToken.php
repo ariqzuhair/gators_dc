@@ -9,6 +9,13 @@ class PersonalAccessToken extends Model implements HasAbilities
 {
     protected $connection = 'mongodb';
     protected $collection = 'personal_access_tokens';
+    
+    /**
+     * The primary key for the model.
+     *
+     * @var string
+     */
+    protected $primaryKey = '_id';
 
     /**
      * Indicates if the IDs are auto-incrementing.

@@ -1,19 +1,13 @@
 <template>
   <div class="card hover:shadow-xl transition-shadow duration-300">
-    <div class="flex justify-between items-start mb-4">
+    <div class="mb-4">
       <div class="flex-1">
         <h3 class="text-xl font-bold text-gray-900 mb-2">{{ session.title }}</h3>
         <div class="flex items-center space-x-2 text-sm text-gray-600">
           <span class="badge" :class="getTypeBadgeClass(session.type)">
             {{ session.type }}
           </span>
-          <span class="badge" :class="getLevelBadgeClass(session.skill_level_required)">
-            {{ session.skill_level_required || 'all' }}
-          </span>
         </div>
-      </div>
-      <div class="text-right">
-        <p class="text-2xl font-bold text-primary-600">${{ session.price }}</p>
       </div>
     </div>
 
@@ -55,7 +49,7 @@
         View Details
       </router-link>
       <button 
-        v-if="showRegisterButton"
+        v-if="showRegisterButton && !isRegistered"
         @click="$emit('register', session._id)"
         :disabled="isFull"
         class="btn flex-1"
@@ -63,6 +57,15 @@
       >
         {{ isFull ? 'Full' : 'Register' }}
       </button>
+      <div 
+        v-else-if="isRegistered"
+        class="flex-1 px-4 py-2 bg-green-100 text-green-800 rounded-lg font-semibold text-center flex items-center justify-center"
+      >
+        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        Registered
+      </div>
     </div>
   </div>
 </template>
@@ -78,6 +81,10 @@ const props = defineProps({
   showRegisterButton: {
     type: Boolean,
     default: true
+  },
+  isRegistered: {
+    type: Boolean,
+    default: false
   }
 })
 
@@ -118,11 +125,30 @@ const formatDate = (dateString) => {
 }
 
 const formatTime = (timeString) => {
-  const time = new Date(timeString)
-  return time.toLocaleTimeString('en-US', { 
-    hour: '2-digit', 
-    minute: '2-digit' 
-  })
+  if (!timeString) return ''
+  
+  // Convert to string if it's not already
+  const timeStr = String(timeString)
+  
+  // If it's already in HH:mm format, return it
+  if (timeStr.match(/^\d{2}:\d{2}$/)) {
+    return timeStr
+  }
+  
+  // If it's a full datetime string, extract the time
+  try {
+    const date = new Date(timeStr)
+    if (isNaN(date.getTime())) {
+      return timeStr
+    }
+    return date.toLocaleTimeString('en-US', { 
+      hour: '2-digit', 
+      minute: '2-digit',
+      hour12: false 
+    })
+  } catch (e) {
+    return timeStr
+  }
 }
 </script>
 

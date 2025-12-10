@@ -18,16 +18,6 @@
           </div>
 
           <div>
-            <label class="label">Skill Level</label>
-            <select v-model="filters.skill_level" class="input">
-              <option value="">All Levels</option>
-              <option value="beginner">Beginner</option>
-              <option value="intermediate">Intermediate</option>
-              <option value="advanced">Advanced</option>
-            </select>
-          </div>
-
-          <div>
             <label class="label">Start Date</label>
             <input v-model="filters.start_date" type="date" class="input" />
           </div>
@@ -59,6 +49,7 @@
         :key="session._id"
         :session="session"
         :show-register-button="isAuthenticated"
+        :is-registered="isSessionRegistered(session._id)"
         @register="handleRegister"
       />
     </div>
@@ -71,6 +62,9 @@ import { useRouter } from 'vue-router'
 import { useSessionStore } from '@/stores/session'
 import { useAuthStore } from '@/stores/auth'
 import SessionCard from '@/components/SessionCard.vue'
+import axios from 'axios'
+
+const API_URL = import.meta.env.VITE_API_URL
 
 const router = useRouter()
 const sessionStore = useSessionStore()
@@ -80,6 +74,9 @@ const sessions = computed(() => sessionStore.sessions)
 const loading = computed(() => sessionStore.loading)
 const error = computed(() => sessionStore.error)
 const isAuthenticated = computed(() => authStore.isAuthenticated)
+const user = computed(() => authStore.user)
+
+const userRegistrations = ref([])
 
 const filters = ref({
   type: '',
@@ -88,8 +85,11 @@ const filters = ref({
   is_active: true
 })
 
-onMounted(() => {
-  applyFilters()
+onMounted(async () => {
+  await applyFilters()
+  if (isAuthenticated.value) {
+    await fetchUserRegistrations()
+  }
 })
 
 const applyFilters = async () => {
@@ -97,6 +97,40 @@ const applyFilters = async () => {
     Object.entries(filters.value).filter(([_, v]) => v !== '')
   )
   await sessionStore.fetchSessions(cleanFilters)
+}
+
+const fetchUserRegistrations = async () => {
+  try {
+    const token = localStorage.getItem('token')
+    
+    // Get player profile
+    const playersResponse = await axios.get(`${API_URL}/players`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    })
+    
+    const players = playersResponse.data.data || playersResponse.data
+    const playersArray = Array.isArray(players) ? players : []
+    const userPlayer = playersArray.find(p => p.user_id === user.value._id)
+    
+    if (userPlayer) {
+      // Get user's registrations
+      const registrationsResponse = await axios.get(`${API_URL}/registrations`, {
+        params: { player_id: userPlayer._id },
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+      
+      const registrations = registrationsResponse.data.data || registrationsResponse.data
+      userRegistrations.value = Array.isArray(registrations) ? registrations : []
+    }
+  } catch (err) {
+    console.error('Error fetching user registrations:', err)
+  }
+}
+
+const isSessionRegistered = (sessionId) => {
+  return userRegistrations.value.some(
+    r => r.session_id === sessionId && r.status === 'registered'
+  )
 }
 
 const handleRegister = (sessionId) => {

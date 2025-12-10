@@ -12,7 +12,7 @@
             <router-link to="/sessions" class="btn bg-white text-primary-600 hover:bg-gray-100">
               View Sessions
             </router-link>
-            <router-link to="/auth/register" class="btn bg-primary-500 text-white hover:bg-primary-700">
+            <router-link v-if="!isAuthenticated" to="/auth/register" class="btn bg-primary-500 text-white hover:bg-primary-700">
               Join Now
             </router-link>
           </div>
@@ -81,6 +81,7 @@
             :key="session._id"
             :session="session"
             :show-register-button="isAuthenticated"
+            :is-registered="isSessionRegistered(session._id)"
             @register="handleRegister"
           />
         </div>
@@ -95,6 +96,9 @@ import { useRouter } from 'vue-router'
 import { useSessionStore } from '@/stores/session'
 import { useAuthStore } from '@/stores/auth'
 import SessionCard from '@/components/SessionCard.vue'
+import axios from 'axios'
+
+const API_URL = import.meta.env.VITE_API_URL
 
 const router = useRouter()
 const sessionStore = useSessionStore()
@@ -103,12 +107,17 @@ const authStore = useAuthStore()
 const upcomingSessions = ref([])
 const loading = ref(false)
 const error = ref(null)
+const userRegistrations = ref([])
 
 const isAuthenticated = computed(() => authStore.isAuthenticated)
+const user = computed(() => authStore.user)
 
 onMounted(async () => {
   console.log('HomePage mounted - isAuthenticated:', authStore.isAuthenticated)
   await fetchUpcomingSessions()
+  if (isAuthenticated.value) {
+    await fetchUserRegistrations()
+  }
 })
 
 const fetchUpcomingSessions = async () => {
@@ -128,6 +137,40 @@ const fetchUpcomingSessions = async () => {
   } finally {
     loading.value = false
   }
+}
+
+const fetchUserRegistrations = async () => {
+  try {
+    const token = localStorage.getItem('token')
+    
+    // Get player profile
+    const playersResponse = await axios.get(`${API_URL}/players`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    })
+    
+    const players = playersResponse.data.data || playersResponse.data
+    const playersArray = Array.isArray(players) ? players : []
+    const userPlayer = playersArray.find(p => p.user_id === user.value._id)
+    
+    if (userPlayer) {
+      // Get user's registrations
+      const registrationsResponse = await axios.get(`${API_URL}/registrations`, {
+        params: { player_id: userPlayer._id },
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+      
+      const registrations = registrationsResponse.data.data || registrationsResponse.data
+      userRegistrations.value = Array.isArray(registrations) ? registrations : []
+    }
+  } catch (err) {
+    console.error('Error fetching user registrations:', err)
+  }
+}
+
+const isSessionRegistered = (sessionId) => {
+  return userRegistrations.value.some(
+    r => r.session_id === sessionId && r.status === 'registered'
+  )
 }
 
 const handleRegister = (sessionId) => {

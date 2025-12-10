@@ -20,6 +20,8 @@ class Registration extends Model
         'status', // registered, cancelled, completed, no-show
         'payment_status', // pending, paid, refunded
         'payment_amount',
+        'registration_type', // member, non-member
+        'guest_payment_receipt', // path to receipt for non-member payments
         'registration_date',
         'cancellation_date',
         'notes',
@@ -60,5 +62,21 @@ class Registration extends Model
         return $this->status === 'registered' && 
                $this->session && 
                $this->session->date->isFuture();
+    }
+
+    /**
+     * Check if this is a non-member registration requiring payment
+     */
+    public function isNonMemberRegistration(): bool
+    {
+        return $this->registration_type === 'non-member';
+    }
+
+    /**
+     * Check if payment verification is pending
+     */
+    public function isPaymentPending(): bool
+    {
+        return $this->payment_status === 'pending' && $this->isNonMemberRegistration();
     }
 }

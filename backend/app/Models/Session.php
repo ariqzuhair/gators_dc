@@ -36,9 +36,7 @@ class Session extends Model
      * @var array<string, string>
      */
     protected $casts = [
-        'date' => 'date',
-        'start_time' => 'datetime',
-        'end_time' => 'datetime',
+        'date' => 'date:Y-m-d',
         'max_participants' => 'integer',
         'current_participants' => 'integer',
         'price' => 'decimal:2',

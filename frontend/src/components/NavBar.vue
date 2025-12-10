@@ -12,10 +12,9 @@
 
         <!-- Desktop Navigation -->
         <div class="hidden md:flex items-center space-x-8">
-          <router-link to="/" class="nav-link">Home</router-link>
+          <router-link to="/" class="nav-link" exact>Home</router-link>
           <router-link to="/sessions" class="nav-link">Sessions</router-link>
-          <router-link v-if="isAuthenticated" to="/players" class="nav-link">Players</router-link>
-          <router-link v-if="isAdmin" to="/admin" class="nav-link">Admin</router-link>
+          <router-link to="/merchandise" class="nav-link">Merchandise</router-link>
         </div>
 
         <!-- Auth Buttons -->
@@ -49,10 +48,9 @@
       <!-- Mobile Menu -->
       <div v-if="mobileMenuOpen" class="md:hidden py-4 border-t">
         <div class="flex flex-col space-y-4">
-          <router-link to="/" class="nav-link-mobile">Home</router-link>
+          <router-link to="/" class="nav-link-mobile" exact>Home</router-link>
           <router-link to="/sessions" class="nav-link-mobile">Sessions</router-link>
-          <router-link v-if="isAuthenticated" to="/players" class="nav-link-mobile">Players</router-link>
-          <router-link v-if="isAdmin" to="/admin" class="nav-link-mobile">Admin</router-link>
+          <router-link to="/merchandise" class="nav-link-mobile">Merchandise</router-link>
           
           <div class="pt-4 border-t">
             <template v-if="isAuthenticated">
@@ -97,14 +95,23 @@ const handleLogout = () => {
 
 <style scoped>
 .nav-link {
-  @apply text-gray-600 hover:text-primary-600 font-medium transition-colors duration-200;
+  @apply text-gray-600 hover:text-primary-600 font-medium transition-colors duration-200 relative;
 }
 
 .nav-link-mobile {
-  @apply text-gray-600 hover:text-primary-600 font-medium transition-colors duration-200 py-2;
+  @apply text-gray-600 hover:text-primary-600 font-medium transition-colors duration-200 py-2 relative;
 }
 
-.router-link-active.nav-link {
+.router-link-exact-active.nav-link {
   @apply text-primary-600;
+}
+
+.router-link-exact-active.nav-link::after {
+  content: '';
+  @apply absolute bottom-0 left-0 w-full h-0.5 bg-primary-600;
+}
+
+.router-link-exact-active.nav-link-mobile {
+  @apply text-primary-600 bg-primary-50 rounded-lg px-3;
 }
 </style>

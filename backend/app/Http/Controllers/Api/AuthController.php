@@ -44,19 +44,22 @@ class AuthController extends Controller
 
         // Create token manually for MongoDB compatibility
         $plainTextToken = Str::random(40);
+        $hashedToken = hash('sha256', $plainTextToken);
         
         $accessToken = new PersonalAccessToken([
             'tokenable_type' => get_class($user),
             'tokenable_id' => (string) $user->_id,
             'name' => 'auth_token',
-            'token' => hash('sha256', $plainTextToken),
+            'token' => $hashedToken,
             'abilities' => ['*'],
         ]);
         $accessToken->save();
+        
+        // Find the token we just created by hash to get the _id
+        $savedToken = PersonalAccessToken::where('token', $hashedToken)->first();
 
         // Return token in Sanctum format: {id}|{plainTextToken}
-        // Get the ID after save - MongoDB assigns it during save
-        $tokenId = (string) $accessToken->getKey();
+        $tokenId = (string) $savedToken->_id;
         $token = $tokenId . '|' . $plainTextToken;
 
         return response()->json([
@@ -95,19 +98,22 @@ class AuthController extends Controller
 
         // Create token manually for MongoDB compatibility
         $plainTextToken = Str::random(40);
+        $hashedToken = hash('sha256', $plainTextToken);
         
         $accessToken = new PersonalAccessToken([
             'tokenable_type' => get_class($user),
             'tokenable_id' => (string) $user->_id,
             'name' => 'auth_token',
-            'token' => hash('sha256', $plainTextToken),
+            'token' => $hashedToken,
             'abilities' => ['*'],
         ]);
         $accessToken->save();
+        
+        // Find the token we just created by hash to get the _id
+        $savedToken = PersonalAccessToken::where('token', $hashedToken)->first();
 
         // Return token in Sanctum format: {id}|{plainTextToken}
-        // Get the ID after save - MongoDB assigns it during save
-        $tokenId = (string) $accessToken->getKey();
+        $tokenId = (string) $savedToken->_id;
         $token = $tokenId . '|' . $plainTextToken;
 
         return response()->json([

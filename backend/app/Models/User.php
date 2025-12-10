@@ -24,6 +24,8 @@ class User extends Model
         'role', // admin, player
         'phone',
         'is_active',
+        'semester_memberships', // Array of semester membership records
+        'payment_receipts', // Array of payment receipt records
     ];
 
     /**

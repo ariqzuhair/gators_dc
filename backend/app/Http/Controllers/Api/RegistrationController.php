@@ -46,6 +46,7 @@ class RegistrationController extends Controller
         $validator = Validator::make($request->all(), [
             'player_id' => 'required|exists:players,_id',
             'session_id' => 'required|exists:sessions,_id',
+            'guest_payment_receipt' => 'nullable|file|mimes:jpeg,png,jpg,pdf|max:5120',
         ]);
 
         if ($validator->fails()) {
@@ -69,29 +70,57 @@ class RegistrationController extends Controller
             return response()->json(['message' => 'Registration is closed for this session'], 400);
         }
 
-        // Check player has active membership
+        // Get player and check membership status
         $player = Player::find($request->player_id);
-
-        if (!$player->hasActiveMembership()) {
-            return response()->json(['message' => 'Player does not have an active membership'], 403);
+        $hasActiveMembership = $player->hasActiveMembership();
+        
+        // Determine registration type and payment amount
+        $registrationType = $hasActiveMembership ? 'member' : 'non-member';
+        $paymentAmount = 0;
+        $paymentStatus = 'paid';
+        $guestPaymentReceiptPath = null;
+        
+        // Non-members pay RM 3 for drop-in sessions
+        if (!$hasActiveMembership) {
+            $paymentAmount = 3.00;
+            $paymentStatus = 'pending'; // Requires admin verification
+            
+            // Handle payment receipt upload
+            if ($request->hasFile('guest_payment_receipt')) {
+                $file = $request->file('guest_payment_receipt');
+                $filename = time() . '_guest_' . $player->_id . '.' . $file->getClientOriginalExtension();
+                $path = $file->storeAs('receipts/guest_payments', $filename, 'public');
+                $guestPaymentReceiptPath = $path;
+            } else {
+                return response()->json([
+                    'message' => 'Non-members must upload a payment receipt (RM 3.00)'
+                ], 400);
+            }
         }
-
+        
         // Create registration
         $registration = Registration::create([
             'player_id' => $request->player_id,
             'session_id' => $request->session_id,
             'status' => 'registered',
-            'payment_status' => 'pending',
-            'payment_amount' => $session->price,
+            'payment_status' => $paymentStatus,
+            'payment_amount' => $paymentAmount,
+            'registration_type' => $registrationType,
+            'guest_payment_receipt' => $guestPaymentReceiptPath,
             'registration_date' => now(),
         ]);
 
         // Update session participant count
         $session->increment('current_participants');
 
+        $message = $hasActiveMembership 
+            ? 'Registration successful'
+            : 'Registration submitted. Payment pending admin verification.';
+
         return response()->json([
-            'message' => 'Registration successful',
-            'registration' => $registration->load('player.user', 'session')
+            'message' => $message,
+            'registration' => $registration->load('player.user', 'session'),
+            'requires_payment_verification' => !$hasActiveMembership
         ], 201);
     }
 
@@ -186,5 +215,115 @@ class RegistrationController extends Controller
         $registration->delete();
 
         return response()->json(['message' => 'Registration deleted successfully']);
+    }
+
+    /**
+     * Get pending guest payment verifications (admin only)
+     */
+    public function getPendingGuestPayments(Request $request)
+    {
+        if (!$request->user()->isAdmin()) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $pendingPayments = Registration::with('player.user', 'session')
+            ->where('registration_type', 'non-member')
+            ->where('payment_status', 'pending')
+            ->orderBy('registration_date', 'desc')
+            ->get();
+
+        return response()->json([
+            'pending_payments' => $pendingPayments
+        ]);
+    }
+
+    /**
+     * Verify guest payment receipt (admin only)
+     */
+    public function verifyGuestPayment(Request $request, $registrationId)
+    {
+        if (!$request->user()->isAdmin()) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $registration = Registration::find($registrationId);
+
+        if (!$registration) {
+            return response()->json(['message' => 'Registration not found'], 404);
+        }
+
+        if (!$registration->isNonMemberRegistration()) {
+            return response()->json(['message' => 'This is not a non-member registration'], 400);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'action' => 'required|in:approve,reject',
+            'notes' => 'nullable|string',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        if ($request->action === 'approve') {
+            $registration->update([
+                'payment_status' => 'paid',
+                'notes' => $request->notes,
+            ]);
+
+            return response()->json([
+                'message' => 'Guest payment verified successfully',
+                'registration' => $registration->load('player.user', 'session')
+            ]);
+        } else {
+            // Reject payment - cancel registration and decrease participant count
+            $registration->update([
+                'status' => 'cancelled',
+                'payment_status' => 'refunded',
+                'cancellation_date' => now(),
+                'notes' => $request->notes ?? 'Payment verification rejected',
+            ]);
+
+            $registration->session->decrement('current_participants');
+
+            return response()->json([
+                'message' => 'Guest payment rejected and registration cancelled',
+                'registration' => $registration
+            ]);
+        }
+    }
+
+    /**
+     * Get guest payment statistics for encouraging membership (for players)
+     */
+    public function getGuestPaymentStats(Request $request, $playerId)
+    {
+        $player = Player::find($playerId);
+
+        if (!$player) {
+            return response()->json(['message' => 'Player not found'], 404);
+        }
+
+        // Only allow users to see their own stats or admins
+        if (!$request->user()->isAdmin() && (string)$player->user_id !== (string)$request->user()->_id) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $guestRegistrations = Registration::where('player_id', $playerId)
+            ->where('registration_type', 'non-member')
+            ->where('payment_status', 'paid')
+            ->get();
+
+        $totalSpent = $guestRegistrations->sum('payment_amount');
+        $sessionCount = $guestRegistrations->count();
+
+        return response()->json([
+            'total_sessions_as_guest' => $sessionCount,
+            'total_spent' => $totalSpent,
+            'membership_cost' => 15.00,
+            'potential_savings' => max(0, $totalSpent - 15.00),
+            'sessions_until_membership_value' => max(0, 5 - $sessionCount),
+            'should_encourage_membership' => $totalSpent >= 15.00 || $sessionCount >= 5,
+        ]);
     }
 }
