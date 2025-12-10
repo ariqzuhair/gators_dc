@@ -1,0 +1,87 @@
+services:
+  # MongoDB Database
+  mongodb:
+    image: mongo:7.0
+    container_name: gators_mongodb
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: admin123
+      MONGO_INITDB_DATABASE: gators_dc
+    ports:
+      - "27018:27017"
+    volumes:
+      - mongodb_data:/data/db
+      - ./docker/mongodb/init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js:ro
+    networks:
+      - gators_network
+
+  # Laravel Backend
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: gators_backend
+    restart: unless-stopped
+    working_dir: /var/www
+    volumes:
+      - ./backend:/var/www
+      - ./docker/php/local.ini:/usr/local/etc/php/conf.d/local.ini
+    ports:
+      - "8001:8000"
+    environment:
+      DB_CONNECTION: mongodb
+      DB_HOST: mongodb
+      DB_PORT: 27017
+      DB_DATABASE: gators_dc
+      DB_USERNAME: admin
+      DB_PASSWORD: admin123
+    depends_on:
+      - mongodb
+    networks:
+      - gators_network
+    command: php artisan serve --host=0.0.0.0 --port=8000
+
+  # Vue.js Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: gators_frontend
+    restart: unless-stopped
+    working_dir: /app
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    ports:
+      - "5174:5173"
+    environment:
+      VITE_API_URL: http://localhost:8001/api
+    depends_on:
+      - backend
+    networks:
+      - gators_network
+    command: npm run dev
+
+  # Nginx (Optional - for production-like setup)
+  nginx:
+    image: nginx:alpine
+    container_name: gators_nginx
+    restart: unless-stopped
+    ports:
+      - "8888:80"
+    volumes:
+      - ./backend:/var/www
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - backend
+    networks:
+      - gators_network
+
+networks:
+  gators_network:
+    driver: bridge
+
+volumes:
+  mongodb_data:
+    driver: local
