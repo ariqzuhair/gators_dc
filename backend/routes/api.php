@@ -8,6 +8,8 @@ use App\Http\Controllers\Api\SessionController;
 use App\Http\Controllers\Api\RegistrationController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\MembershipController;
+use App\Http\Controllers\Api\ProductController;
+use App\Http\Controllers\Api\ImageController;
 
 /*
 |--------------------------------------------------------------------------
@@ -22,6 +24,10 @@ Route::post('/login', [AuthController::class, 'login']);
 // Session routes (public for viewing)
 Route::get('/sessions', [SessionController::class, 'index']);
 Route::get('/sessions/{id}', [SessionController::class, 'show']);
+
+// Product routes (public for viewing)
+Route::get('/products', [ProductController::class, 'index']);
+Route::get('/products/{id}', [ProductController::class, 'show']);
 
 // Protected routes
 Route::middleware('auth:sanctum')->group(function () {
@@ -66,6 +72,15 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/registrations/guest-payments/pending', [RegistrationController::class, 'getPendingGuestPayments']);
     Route::post('/registrations/{id}/verify-guest-payment', [RegistrationController::class, 'verifyGuestPayment']);
     Route::get('/players/{id}/guest-payment-stats', [RegistrationController::class, 'getGuestPaymentStats']);
+    
+    // Product routes (admin only for create, update, delete)
+    Route::apiResource('products', ProductController::class)->except(['index', 'show']);
+    Route::post('/products/{id}/toggle-featured', [ProductController::class, 'toggleFeatured']);
+    Route::post('/products/reorder', [ProductController::class, 'reorder']);
+    
+    // Image upload routes (admin only)
+    Route::post('/upload-image', [ImageController::class, 'upload']);
+    Route::post('/delete-image', [ImageController::class, 'delete']);
 });
 
 Route::get('/', function () {

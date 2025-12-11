@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import api from '@/services/api'
+import { apiCache } from '@/utils/performance'
 
 export const useSessionStore = defineStore('session', () => {
   const sessions = ref([])
@@ -9,12 +10,31 @@ export const useSessionStore = defineStore('session', () => {
   const error = ref(null)
 
   async function fetchSessions(filters = {}) {
+    // Check cache first
+    const cacheKey = `sessions-${JSON.stringify(filters)}`
+    const cached = apiCache.get(cacheKey)
+    
+    if (cached) {
+      sessions.value = cached
+      return cached
+    }
+
     loading.value = true
     error.value = null
     try {
       const response = await api.get('/sessions', { params: filters })
-      sessions.value = response.data.data || response.data
-      return sessions.value
+      const data = response.data.data || response.data
+      sessions.value = data
+      
+      // Debug: Log first session date format
+      if (data.length > 0) {
+        console.log('Session date format:', data[0].date, typeof data[0].date)
+      }
+      
+      // Cache the response for 2 minutes
+      apiCache.set(cacheKey, data)
+      
+      return data
     } catch (err) {
       error.value = err.message
       throw err
@@ -24,11 +44,24 @@ export const useSessionStore = defineStore('session', () => {
   }
 
   async function fetchSessionById(id) {
+    // Check cache first
+    const cacheKey = `session-${id}`
+    const cached = apiCache.get(cacheKey)
+    
+    if (cached) {
+      currentSession.value = cached
+      return cached
+    }
+
     loading.value = true
     error.value = null
     try {
       const response = await api.get(`/sessions/${id}`)
       currentSession.value = response.data
+      
+      // Cache the response
+      apiCache.set(cacheKey, response.data)
+      
       return currentSession.value
     } catch (err) {
       error.value = err.message
@@ -43,7 +76,11 @@ export const useSessionStore = defineStore('session', () => {
     error.value = null
     try {
       const response = await api.post('/sessions', sessionData)
-      sessions.value.unshift(response.data.session)
+      
+      // Clear cache and refetch to ensure proper date formatting
+      apiCache.clear()
+      await fetchSessions()
+      
       return response.data.session
     } catch (err) {
       error.value = err.message
@@ -58,10 +95,11 @@ export const useSessionStore = defineStore('session', () => {
     error.value = null
     try {
       const response = await api.put(`/sessions/${id}`, sessionData)
-      const index = sessions.value.findIndex(s => s._id === id)
-      if (index !== -1) {
-        sessions.value[index] = response.data.session
-      }
+      
+      // Clear cache and refetch to ensure proper date formatting
+      apiCache.clear()
+      await fetchSessions()
+      
       return response.data.session
     } catch (err) {
       error.value = err.message
@@ -76,7 +114,10 @@ export const useSessionStore = defineStore('session', () => {
     error.value = null
     try {
       await api.delete(`/sessions/${id}`)
-      sessions.value = sessions.value.filter(s => s._id !== id)
+      
+      // Clear cache and refetch
+      apiCache.clear()
+      await fetchSessions()
     } catch (err) {
       error.value = err.message
       throw err

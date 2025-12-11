@@ -66,6 +66,21 @@
             <span class="font-medium">Sessions</span>
           </button>
 
+          <button
+            @click="activeTab = 'merchandise'"
+            :class="[
+              'w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors',
+              activeTab === 'merchandise' 
+                ? 'bg-red-600 text-white' 
+                : 'text-gray-700 hover:bg-gray-100'
+            ]"
+          >
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+            </svg>
+            <span class="font-medium">Merchandise</span>
+          </button>
+
           <hr class="my-4 border-gray-200">
 
           <button
@@ -188,26 +203,40 @@
                 </span>
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                <div class="flex space-x-3">
+                <div class="flex space-x-2">
                   <button
                     @click="toggleUserStatus(user)"
-                    :class="user.is_active ? 'text-yellow-600 hover:text-yellow-900' : 'text-green-600 hover:text-green-900'"
-                    class="transition-colors"
                     :disabled="updatingUser === user._id"
+                    :class="user.is_active 
+                      ? 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200' 
+                      : 'bg-green-100 text-green-700 hover:bg-green-200'"
+                    class="px-3 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
+                    <svg v-if="user.is_active" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                    </svg>
+                    <svg v-else xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
                     {{ user.is_active ? 'Deactivate' : 'Activate' }}
                   </button>
                   <button
                     @click="openEditModal(user)"
-                    class="text-blue-600 hover:text-blue-900 transition-colors"
+                    class="px-3 py-1.5 bg-blue-100 text-blue-700 hover:bg-blue-200 rounded-lg text-xs font-medium transition-colors flex items-center gap-1"
                   >
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
                     Edit
                   </button>
                   <button
                     @click="confirmDelete(user)"
-                    class="text-red-600 hover:text-red-900 transition-colors"
                     :disabled="deletingUser === user._id"
+                    class="px-3 py-1.5 bg-red-100 text-red-700 hover:bg-red-200 rounded-lg text-xs font-medium transition-colors flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
                     Delete
                   </button>
                 </div>
@@ -1277,6 +1306,366 @@
           </div>
         </div>
       </div>
+
+      <!-- Merchandise Tab -->
+      <div v-if="activeTab === 'merchandise'">
+        <div class="mb-8 flex justify-between items-center">
+          <div>
+            <h1 class="text-3xl font-bold text-gray-900 mb-2">Merchandise Management</h1>
+            <p class="text-gray-600">Manage club merchandise, featured products, and inventory</p>
+          </div>
+          <button
+            @click="openProductModal()"
+            class="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center gap-2"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+            </svg>
+            Add Product
+          </button>
+        </div>
+
+        <!-- Products Grid -->
+        <div v-if="loadingProducts" class="text-center py-12">
+          <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-red-600"></div>
+          <p class="mt-4 text-gray-600">Loading products...</p>
+        </div>
+
+        <div v-else-if="products.length === 0" class="text-center py-12 bg-white rounded-lg shadow-sm">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+          </svg>
+          <h3 class="text-lg font-medium text-gray-900 mb-2">No Products Yet</h3>
+          <p class="text-gray-600 mb-6">Get started by adding your first product</p>
+          <button
+            @click="openProductModal()"
+            class="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+          >
+            Add Your First Product
+          </button>
+        </div>
+
+        <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div
+            v-for="product in products"
+            :key="product._id"
+            class="bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow"
+          >
+            <!-- Product Image -->
+            <div class="relative h-48 bg-gray-200">
+              <img
+                v-if="product.image_url"
+                :src="product.image_url"
+                :alt="product.name"
+                class="w-full h-full object-cover"
+              />
+              <div v-else class="w-full h-full flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+              </div>
+              <!-- Featured Badge -->
+              <div
+                v-if="product.is_featured"
+                class="absolute top-2 left-2 px-3 py-1 bg-yellow-500 text-white text-xs font-semibold rounded-full"
+              >
+                ⭐ Featured
+              </div>
+              <!-- Stock Badge -->
+              <div
+                v-if="!product.in_stock"
+                class="absolute top-2 right-2 px-3 py-1 bg-red-500 text-white text-xs font-semibold rounded-full"
+              >
+                Out of Stock
+              </div>
+            </div>
+
+            <!-- Product Details -->
+            <div class="p-4">
+              <div class="mb-2">
+                <h3 class="text-lg font-bold text-gray-900">{{ product.name }}</h3>
+                <p class="text-sm text-gray-500">{{ product.category }}</p>
+              </div>
+              
+              <p class="text-gray-600 text-sm mb-3 line-clamp-2">{{ product.description }}</p>
+              
+              <div class="flex items-center gap-2 mb-3">
+                <span class="text-xl font-bold text-red-600">RM {{ product.price }}</span>
+                <span v-if="product.original_price" class="text-sm text-gray-400 line-through">
+                  RM {{ product.original_price }}
+                </span>
+              </div>
+
+              <div class="text-sm text-gray-600 mb-3">
+                <span v-if="product.sizes && product.sizes.length">
+                  Sizes: {{ product.sizes.join(', ') }}
+                </span>
+              </div>
+
+              <!-- Action Buttons -->
+              <div class="flex gap-2 pt-3 border-t">
+                <button
+                  @click="toggleProductFeatured(product)"
+                  class="flex-1 px-3 py-2 text-sm rounded-lg transition-colors"
+                  :class="product.is_featured ? 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'"
+                >
+                  {{ product.is_featured ? '⭐ Featured' : 'Set Featured' }}
+                </button>
+                <button
+                  @click="openProductModal(product)"
+                  class="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  Edit
+                </button>
+                <button
+                  @click="confirmDeleteProduct(product)"
+                  class="px-4 py-2 bg-red-600 text-white text-sm rounded-lg hover:bg-red-700 transition-colors"
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Add/Edit Product Modal -->
+      <div
+        v-if="showProductModal"
+        class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+        @click.self="closeProductModal"
+      >
+        <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto animate-fade-in">
+          <div class="sticky top-0 bg-white border-b px-6 py-4 flex justify-between items-center">
+            <h2 class="text-2xl font-bold text-gray-900">
+              {{ editingProduct ? 'Edit Product' : 'Add New Product' }}
+            </h2>
+            <button
+              @click="closeProductModal"
+              class="text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+
+          <form @submit.prevent="saveProduct" class="p-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <!-- Product Name -->
+              <div class="md:col-span-2">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Product Name *</label>
+                <input
+                  v-model="productForm.name"
+                  type="text"
+                  required
+                  placeholder="E.g., Gators Jersey"
+                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                />
+              </div>
+
+              <!-- Description -->
+              <div class="md:col-span-2">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Description *</label>
+                <textarea
+                  v-model="productForm.description"
+                  required
+                  rows="3"
+                  placeholder="Describe the product..."
+                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                ></textarea>
+              </div>
+
+              <!-- Category -->
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Category *</label>
+                <select
+                  v-model="productForm.category"
+                  required
+                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                >
+                  <option value="">Select category</option>
+                  <option value="Apparel">Apparel</option>
+                  <option value="Equipment">Equipment</option>
+                  <option value="Accessories">Accessories</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+
+              <!-- Price -->
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Price (RM) *</label>
+                <input
+                  v-model.number="productForm.price"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  required
+                  placeholder="0.00"
+                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                />
+              </div>
+
+              <!-- Original Price -->
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Original Price (RM)</label>
+                <input
+                  v-model.number="productForm.original_price"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  placeholder="Leave empty if no discount"
+                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                />
+              </div>
+
+              <!-- Image Upload -->
+              <div class="md:col-span-2">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Product Image</label>
+                
+                <!-- Image Preview -->
+                <div v-if="imagePreview || productForm.image_url" class="mb-3">
+                  <img 
+                    :src="imagePreview || productForm.image_url" 
+                    alt="Product preview" 
+                    class="w-32 h-32 object-cover rounded-lg border-2 border-gray-200"
+                  />
+                  <button
+                    v-if="imagePreview || productForm.image_url"
+                    @click="clearImage"
+                    type="button"
+                    class="mt-2 text-sm text-red-600 hover:text-red-700"
+                  >
+                    Remove Image
+                  </button>
+                </div>
+
+                <!-- File Input -->
+                <div class="flex gap-2">
+                  <label class="flex-1 flex items-center justify-center px-4 py-2 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-red-500 transition-colors">
+                    <div class="text-center">
+                      <svg class="mx-auto h-8 w-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                      <span class="mt-1 text-sm text-gray-600">
+                        {{ selectedImage ? selectedImage.name : 'Click to upload image' }}
+                      </span>
+                      <p class="text-xs text-gray-500 mt-1">PNG, JPG, GIF up to 5MB</p>
+                    </div>
+                    <input
+                      type="file"
+                      @change="handleImageSelect"
+                      accept="image/*"
+                      class="hidden"
+                    />
+                  </label>
+                </div>
+              </div>
+
+              <!-- Sizes -->
+              <div class="md:col-span-2">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Available Sizes</label>
+                <div class="flex flex-wrap gap-2">
+                  <label v-for="size in availableSizes" :key="size" class="flex items-center">
+                    <input
+                      type="checkbox"
+                      :value="size"
+                      v-model="productForm.sizes"
+                      class="mr-2 rounded border-gray-300 text-red-600 focus:ring-red-500"
+                    />
+                    <span class="text-sm text-gray-700">{{ size }}</span>
+                  </label>
+                </div>
+              </div>
+
+              <!-- Badge -->
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Badge (Optional)</label>
+                <input
+                  v-model="productForm.badge"
+                  type="text"
+                  placeholder="E.g., New, Sale, Limited"
+                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                />
+              </div>
+
+              <!-- Checkboxes -->
+              <div class="flex flex-col gap-2">
+                <label class="flex items-center">
+                  <input
+                    type="checkbox"
+                    v-model="productForm.in_stock"
+                    class="mr-2 rounded border-gray-300 text-red-600 focus:ring-red-500"
+                  />
+                  <span class="text-sm text-gray-700">In Stock</span>
+                </label>
+                <label class="flex items-center">
+                  <input
+                    type="checkbox"
+                    v-model="productForm.is_featured"
+                    class="mr-2 rounded border-gray-300 text-red-600 focus:ring-red-500"
+                  />
+                  <span class="text-sm text-gray-700">Featured Product</span>
+                </label>
+              </div>
+            </div>
+
+            <!-- Form Actions -->
+            <div class="flex gap-4 mt-6 pt-6 border-t">
+              <button
+                type="button"
+                @click="closeProductModal"
+                class="flex-1 px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                :disabled="savingProduct"
+                class="flex-1 px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50"
+              >
+                {{ savingProduct ? 'Saving...' : (editingProduct ? 'Update Product' : 'Add Product') }}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- Delete Confirmation Modal -->
+      <div
+        v-if="showProductDeleteModal"
+        class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+        @click.self="showProductDeleteModal = false"
+      >
+        <div class="bg-white rounded-lg shadow-xl max-w-md w-full animate-fade-in">
+          <div class="p-6">
+            <div class="flex items-center justify-center w-12 h-12 mx-auto bg-red-100 rounded-full mb-4">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+            </div>
+            <h3 class="text-lg font-bold text-gray-900 text-center mb-2">Delete Product</h3>
+            <p class="text-gray-600 text-center mb-6">
+              Are you sure you want to delete "<strong>{{ productToDelete?.name }}</strong>"?
+              This action cannot be undone.
+            </p>
+            <div class="flex gap-4">
+              <button
+                @click="showProductDeleteModal = false"
+                class="flex-1 px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                @click="deleteProduct"
+                class="flex-1 px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -1305,6 +1694,7 @@ const activeTab = ref('users')
 const loading = ref(false)
 const error = ref(null)
 const searchQuery = ref('')
+const debouncedSearchQuery = ref('')
 const filterRole = ref('')
 const filterStatus = ref('')
 const showEditModal = ref(false)
@@ -1339,6 +1729,31 @@ const showSemesterActionModal = ref(false)
 const semesterAction = ref(null)
 const semesterActionTitle = ref('')
 const semesterActionMessage = ref('')
+
+// Merchandise Management State
+const products = ref([])
+const loadingProducts = ref(false)
+const showProductModal = ref(false)
+const showProductDeleteModal = ref(false)
+const editingProduct = ref(null)
+const productToDelete = ref(null)
+const savingProduct = ref(false)
+const availableSizes = ['XS', 'S', 'M', 'L', 'XL', 'XXL']
+const productForm = ref({
+  name: '',
+  description: '',
+  category: '',
+  price: 0,
+  original_price: null,
+  image_url: '',
+  sizes: [],
+  badge: '',
+  in_stock: true,
+  is_featured: false
+})
+const selectedImage = ref(null)
+const imagePreview = ref(null)
+const uploadingImage = ref(false)
 const semesterActionColor = ref('')
 
 // Payment Verification State
@@ -1434,6 +1849,9 @@ const currentMonthYear = computed(() => {
 })
 
 const calendarDays = computed(() => {
+  console.log('Computing calendar days for:', currentYear.value, currentMonth.value + 1)
+  console.log('Total sessions in store:', sessionStore.sessions.length)
+  
   const firstDay = new Date(currentYear.value, currentMonth.value, 1)
   const lastDay = new Date(currentYear.value, currentMonth.value + 1, 0)
   const prevLastDay = new Date(currentYear.value, currentMonth.value, 0)
@@ -1468,7 +1886,28 @@ const calendarDays = computed(() => {
     const dateStr = `${year}-${month}-${day}`
     
     const daySessions = sessionStore.sessions.filter(session => {
-      return session.date === dateStr
+      // Handle different date formats from backend
+      let sessionDate = session.date
+      
+      // If it's a Date object or timestamp, convert to string
+      if (sessionDate instanceof Date) {
+        const y = sessionDate.getFullYear()
+        const m = String(sessionDate.getMonth() + 1).padStart(2, '0')
+        const d = String(sessionDate.getDate()).padStart(2, '0')
+        sessionDate = `${y}-${m}-${d}`
+      } else if (typeof sessionDate === 'string') {
+        // Extract just the date part if it includes time (e.g., "2025-12-11T00:00:00.000Z")
+        sessionDate = sessionDate.split('T')[0]
+      }
+      
+      const matches = sessionDate === dateStr
+      
+      // Debug logging for all days with sessions
+      if (matches) {
+        console.log(`✓ Session "${session.title}" matches ${dateStr}`)
+      }
+      
+      return matches
     })
     
     const checkDate = new Date(currentYear.value, currentMonth.value, i)
@@ -2003,6 +2442,7 @@ const fetchSessions = async () => {
   loadingSessions.value = true
   try {
     await sessionStore.fetchSessions()
+    console.log('All sessions loaded:', sessionStore.sessions.map(s => ({ title: s.title, date: s.date, type: typeof s.date })))
   } catch (err) {
     console.error('Failed to fetch sessions:', err)
   } finally {
@@ -2149,11 +2589,284 @@ const formatTime = (timeStr) => {
   }
 }
 
+// Merchandise Management Methods
+const fetchProducts = async () => {
+  loadingProducts.value = true
+  try {
+    const response = await axios.get(`${API_URL}/products`, {
+      headers: {
+        'Authorization': `Bearer ${authStore.token}`
+      }
+    })
+    products.value = response.data.data || response.data
+    console.log('Fetched products:', products.value.length)
+    if (products.value.length > 0) {
+      console.log('First product structure:', products.value[0])
+      console.log('First product ID:', products.value[0]._id)
+    }
+  } catch (err) {
+    console.error('Failed to fetch products:', err)
+    alert('Failed to load products: ' + (err.response?.data?.message || err.message))
+  } finally {
+    loadingProducts.value = false
+  }
+}
+
+// Image Upload Functions
+const handleImageSelect = (event) => {
+  const file = event.target.files[0]
+  if (!file) return
+
+  // Validate file size (5MB)
+  if (file.size > 5 * 1024 * 1024) {
+    alert('Image size must be less than 5MB')
+    return
+  }
+
+  // Validate file type
+  const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp']
+  if (!allowedTypes.includes(file.type)) {
+    alert('Only JPEG, PNG, GIF, and WebP images are allowed')
+    return
+  }
+
+  selectedImage.value = file
+
+  // Create preview
+  const reader = new FileReader()
+  reader.onload = (e) => {
+    imagePreview.value = e.target.result
+  }
+  reader.readAsDataURL(file)
+}
+
+const clearImage = () => {
+  selectedImage.value = null
+  imagePreview.value = null
+  productForm.value.image_url = ''
+}
+
+const uploadImage = async () => {
+  if (!selectedImage.value) return null
+
+  uploadingImage.value = true
+  try {
+    const formData = new FormData()
+    formData.append('image', selectedImage.value)
+
+    const response = await axios.post(
+      `${API_URL}/upload-image`,
+      formData,
+      {
+        headers: {
+          'Authorization': `Bearer ${authStore.token}`,
+          'Content-Type': 'multipart/form-data'
+        }
+      }
+    )
+
+    return response.data.url
+  } catch (err) {
+    console.error('Image upload failed:', err)
+    alert('Failed to upload image: ' + (err.response?.data?.message || err.message))
+    return null
+  } finally {
+    uploadingImage.value = false
+  }
+}
+
+const openProductModal = (product = null) => {
+  if (product) {
+    editingProduct.value = product
+    productForm.value = {
+      name: product.name,
+      description: product.description,
+      category: product.category,
+      price: product.price,
+      original_price: product.original_price || null,
+      image_url: product.image_url || '',
+      sizes: product.sizes || [],
+      badge: product.badge || '',
+      in_stock: product.in_stock !== false,
+      is_featured: product.is_featured || false
+    }
+  } else {
+    editingProduct.value = null
+    productForm.value = {
+      name: '',
+      description: '',
+      category: '',
+      price: 0,
+      original_price: null,
+      image_url: '',
+      sizes: [],
+      badge: '',
+      in_stock: true,
+      is_featured: false
+    }
+  }
+  showProductModal.value = true
+}
+
+const closeProductModal = () => {
+  showProductModal.value = false
+  editingProduct.value = null
+  selectedImage.value = null
+  imagePreview.value = null
+  productForm.value = {
+    name: '',
+    description: '',
+    category: '',
+    price: 0,
+    original_price: null,
+    image_url: '',
+    sizes: [],
+    badge: '',
+    in_stock: true,
+    is_featured: false
+  }
+}
+
+const saveProduct = async () => {
+  savingProduct.value = true
+  try {
+    // Upload image first if a new one is selected
+    if (selectedImage.value) {
+      const uploadedUrl = await uploadImage()
+      if (uploadedUrl) {
+        productForm.value.image_url = uploadedUrl
+      } else {
+        // Upload failed, stop saving
+        savingProduct.value = false
+        return
+      }
+    }
+
+    const productData = {
+      ...productForm.value,
+      original_price: productForm.value.original_price || null,
+      in_stock: Boolean(productForm.value.in_stock),
+      is_featured: Boolean(productForm.value.is_featured),
+      image_url: productForm.value.image_url || null
+    }
+
+    if (editingProduct.value) {
+      // Update existing product
+      await axios.put(
+        `${API_URL}/products/${editingProduct.value._id}`,
+        productData,
+        {
+          headers: {
+            'Authorization': `Bearer ${authStore.token}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      )
+    } else {
+      // Create new product
+      await axios.post(
+        `${API_URL}/products`,
+        productData,
+        {
+          headers: {
+            'Authorization': `Bearer ${authStore.token}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      )
+    }
+
+    closeProductModal()
+    await fetchProducts()
+    alert(`Product ${editingProduct.value ? 'updated' : 'created'} successfully!`)
+  } catch (err) {
+    console.error('Failed to save product:', err)
+    console.error('Full error response:', err.response?.data)
+    
+    // Show detailed validation errors if available
+    let errorMessage = 'Failed to save product: '
+    if (err.response?.data?.errors) {
+      const errors = Object.values(err.response.data.errors).flat()
+      errorMessage += errors.join(', ')
+    } else {
+      errorMessage += (err.response?.data?.message || err.message)
+    }
+    
+    alert(errorMessage)
+  } finally {
+    savingProduct.value = false
+  }
+}
+
+const confirmDeleteProduct = (product) => {
+  productToDelete.value = product
+  showProductDeleteModal.value = true
+}
+
+const deleteProduct = async () => {
+  if (!productToDelete.value) return
+
+  console.log('Deleting product:', productToDelete.value)
+  console.log('Product ID:', productToDelete.value._id)
+
+  try {
+    const url = `${API_URL}/products/${productToDelete.value._id}`
+    console.log('DELETE URL:', url)
+    
+    await axios.delete(
+      url,
+      {
+        headers: {
+          'Authorization': `Bearer ${authStore.token}`
+        }
+      }
+    )
+    
+    showProductDeleteModal.value = false
+    productToDelete.value = null
+    await fetchProducts()
+    alert('Product deleted successfully!')
+  } catch (err) {
+    console.error('Failed to delete product:', err)
+    alert('Failed to delete product: ' + (err.response?.data?.message || err.message))
+  }
+}
+
+const toggleProductFeatured = async (product) => {
+  try {
+    await axios.post(
+      `${API_URL}/products/${product._id}/toggle-featured`,
+      {},
+      {
+        headers: {
+          'Authorization': `Bearer ${authStore.token}`
+        }
+      }
+    )
+    
+    await fetchProducts()
+  } catch (err) {
+    console.error('Failed to toggle featured status:', err)
+    alert('Failed to update featured status: ' + (err.response?.data?.message || err.message))
+  }
+}
+
 // Watch for active tab changes
+// Debounce search query for performance
+let searchDebounceTimer = null
+watch(searchQuery, (newValue) => {
+  clearTimeout(searchDebounceTimer)
+  searchDebounceTimer = setTimeout(() => {
+    debouncedSearchQuery.value = newValue
+  }, 300)
+})
+
 watch(activeTab, (newTab) => {
   if (newTab === 'payments') {
     fetchPendingReceipts()
     fetchPendingGuestPayments()
+  } else if (newTab === 'merchandise') {
+    fetchProducts()
   }
 })
 
