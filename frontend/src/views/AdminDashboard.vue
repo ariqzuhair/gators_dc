@@ -88,9 +88,10 @@
             class="w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors"
           >
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
             </svg>
-            <span class="font-medium">Back to Home</span>
+            <span class="font-medium">User View</span>
           </button>
 
           <button
@@ -1352,24 +1353,17 @@
             class="bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow"
           >
             <!-- Product Image -->
-            <div class="relative h-48 bg-gray-200">
+            <div class="relative h-48 bg-gray-200 flex items-center justify-center overflow-hidden">
               <img
                 v-if="product.image_url"
                 :src="product.image_url"
                 :alt="product.name"
-                class="w-full h-full object-cover"
+                class="w-full h-full object-contain"
               />
               <div v-else class="w-full h-full flex items-center justify-center">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
-              </div>
-              <!-- Featured Badge -->
-              <div
-                v-if="product.is_featured"
-                class="absolute top-2 left-2 px-3 py-1 bg-yellow-500 text-white text-xs font-semibold rounded-full"
-              >
-                ⭐ Featured
               </div>
               <!-- Stock Badge -->
               <div
@@ -1405,21 +1399,14 @@
               <!-- Action Buttons -->
               <div class="flex gap-2 pt-3 border-t">
                 <button
-                  @click="toggleProductFeatured(product)"
-                  class="flex-1 px-3 py-2 text-sm rounded-lg transition-colors"
-                  :class="product.is_featured ? 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'"
-                >
-                  {{ product.is_featured ? '⭐ Featured' : 'Set Featured' }}
-                </button>
-                <button
                   @click="openProductModal(product)"
-                  class="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors"
+                  class="flex-1 px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors"
                 >
                   Edit
                 </button>
                 <button
                   @click="confirmDeleteProduct(product)"
-                  class="px-4 py-2 bg-red-600 text-white text-sm rounded-lg hover:bg-red-700 transition-colors"
+                  class="flex-1 px-4 py-2 bg-red-600 text-white text-sm rounded-lg hover:bg-red-700 transition-colors"
                 >
                   Delete
                 </button>
@@ -1589,25 +1576,6 @@
                 />
               </div>
 
-              <!-- Checkboxes -->
-              <div class="flex flex-col gap-2">
-                <label class="flex items-center">
-                  <input
-                    type="checkbox"
-                    v-model="productForm.in_stock"
-                    class="mr-2 rounded border-gray-300 text-red-600 focus:ring-red-500"
-                  />
-                  <span class="text-sm text-gray-700">In Stock</span>
-                </label>
-                <label class="flex items-center">
-                  <input
-                    type="checkbox"
-                    v-model="productForm.is_featured"
-                    class="mr-2 rounded border-gray-300 text-red-600 focus:ring-red-500"
-                  />
-                  <span class="text-sm text-gray-700">Featured Product</span>
-                </label>
-              </div>
             </div>
 
             <!-- Form Actions -->
@@ -2687,8 +2655,7 @@ const openProductModal = (product = null) => {
       image_url: product.image_url || '',
       sizes: product.sizes || [],
       badge: product.badge || '',
-      in_stock: product.in_stock !== false,
-      is_featured: product.is_featured || false
+      in_stock: true
     }
   } else {
     editingProduct.value = null
@@ -2701,8 +2668,7 @@ const openProductModal = (product = null) => {
       image_url: '',
       sizes: [],
       badge: '',
-      in_stock: true,
-      is_featured: false
+      in_stock: true
     }
   }
   showProductModal.value = true
@@ -2743,11 +2709,15 @@ const saveProduct = async () => {
     }
 
     const productData = {
-      ...productForm.value,
+      name: productForm.value.name,
+      description: productForm.value.description,
+      category: productForm.value.category,
+      price: productForm.value.price,
       original_price: productForm.value.original_price || null,
-      in_stock: Boolean(productForm.value.in_stock),
-      is_featured: Boolean(productForm.value.is_featured),
-      image_url: productForm.value.image_url || null
+      image_url: productForm.value.image_url || null,
+      sizes: productForm.value.sizes || [],
+      badge: productForm.value.badge || '',
+      in_stock: true
     }
 
     if (editingProduct.value) {
@@ -2778,7 +2748,6 @@ const saveProduct = async () => {
 
     closeProductModal()
     await fetchProducts()
-    alert(`Product ${editingProduct.value ? 'updated' : 'created'} successfully!`)
   } catch (err) {
     console.error('Failed to save product:', err)
     console.error('Full error response:', err.response?.data)

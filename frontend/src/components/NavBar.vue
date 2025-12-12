@@ -15,14 +15,20 @@
           <router-link to="/" class="nav-link" exact>Home</router-link>
           <router-link to="/sessions" class="nav-link">Sessions</router-link>
           <router-link to="/merchandise" class="nav-link">Merchandise</router-link>
+          <router-link v-if="isAdmin" to="/admin" class="nav-link">
+            Admin Panel
+          </router-link>
         </div>
 
         <!-- Auth Buttons -->
         <div class="hidden md:flex items-center space-x-4">
           <template v-if="isAuthenticated">
-            <router-link to="/profile" class="nav-link">
+            <router-link v-if="!isAdmin" to="/profile" class="nav-link">
               {{ user?.name }}
             </router-link>
+            <span v-if="isAdmin" class="text-gray-600 font-medium">
+              {{ user?.name }}
+            </span>
             <button @click="handleLogout" class="btn btn-secondary">
               Logout
             </button>
@@ -54,7 +60,8 @@
           
           <div class="pt-4 border-t">
             <template v-if="isAuthenticated">
-              <router-link to="/profile" class="nav-link-mobile">Profile</router-link>
+              <router-link v-if="isAdmin" to="/admin" class="nav-link-mobile">Admin Panel</router-link>
+              <router-link v-if="!isAdmin" to="/profile" class="nav-link-mobile">Profile</router-link>
               <button @click="handleLogout" class="btn btn-secondary w-full mt-2">
                 Logout
               </button>

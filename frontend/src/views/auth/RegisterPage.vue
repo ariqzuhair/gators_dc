@@ -47,13 +47,32 @@
         </div>
 
         <!-- Error Message -->
-        <transition name="shake">
-          <div v-if="error" class="error-message bg-red-50 border-l-4 border-red-500 text-red-700 px-3 py-2 rounded mb-4 text-sm">
-            <div class="flex items-center">
-              <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
-              </svg>
-              {{ error }}
+        <transition name="slide-down">
+          <div v-if="error" class="mb-4">
+            <div class="bg-red-50 border border-red-200 rounded-lg p-4 relative">
+              <div class="flex items-start">
+                <div class="flex-shrink-0">
+                  <svg class="w-5 h-5 text-red-400" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                  </svg>
+                </div>
+                <div class="ml-3 flex-1">
+                  <h3 class="text-sm font-medium text-red-800">Registration Error</h3>
+                  <div class="mt-1 text-sm text-red-700">
+                    <div v-if="Array.isArray(error)">
+                      <ul class="list-disc list-inside space-y-1">
+                        <li v-for="(err, index) in error" :key="index">{{ err }}</li>
+                      </ul>
+                    </div>
+                    <div v-else>{{ error }}</div>
+                  </div>
+                </div>
+                <button @click="error = null" class="ml-3 flex-shrink-0">
+                  <svg class="w-5 h-5 text-red-400 hover:text-red-600" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+                  </svg>
+                </button>
+              </div>
             </div>
           </div>
         </transition>
@@ -354,10 +373,19 @@ const handleRegister = async () => {
     if (err.response?.data?.errors) {
       const errors = err.response.data.errors
       const errorMessages = Object.values(errors).flat()
-      error.value = errorMessages.join(', ')
+      error.value = errorMessages
+    } else if (err.response?.status === 422) {
+      error.value = err.response?.data?.message || 'Please check your input and try again.'
+    } else if (err.response?.status === 409) {
+      error.value = 'This email is already registered. Please login instead.'
+    } else if (!err.response) {
+      error.value = 'Unable to connect to server. Please check your internet connection.'
     } else {
-      error.value = err.response?.data?.message || 'Registration failed'
+      error.value = err.response?.data?.message || 'Registration failed. Please try again.'
     }
+    
+    // Scroll to top to show error
+    window.scrollTo({ top: 0, behavior: 'smooth' })
   } finally {
     loading.value = false
   }
@@ -368,6 +396,22 @@ const handleRegister = async () => {
 /* Step content transitions */
 .step-content {
   animation: slideInRight 0.4s ease-out;
+}
+
+/* Error message animation */
+.slide-down-enter-active,
+.slide-down-leave-active {
+  transition: all 0.3s ease;
+}
+
+.slide-down-enter-from {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+
+.slide-down-leave-to {
+  opacity: 0;
+  transform: translateY(-10px);
 }
 
 @keyframes slideInRight {

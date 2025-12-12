@@ -33,12 +33,15 @@ api.interceptors.response.use(
       headers: error.config?.headers
     })
     
-    if (error.response?.status === 401) {
+    // Only redirect on 401 if we're NOT on the login page
+    // Let the login page handle its own 401 errors
+    if (error.response?.status === 401 && !error.config?.url?.includes('/login')) {
       console.log('401 Unauthorized - Redirecting to login')
       localStorage.removeItem('token')
       localStorage.removeItem('user')
       window.location.href = '/auth/login'
     }
+    
     return Promise.reject(error)
   }
 )

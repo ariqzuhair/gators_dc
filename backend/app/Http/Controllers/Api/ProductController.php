@@ -165,10 +165,14 @@ class ProductController extends Controller
             ], 422);
         }
 
-        // Filter out null values from request to prevent casting errors
-        $updateData = array_filter($request->all(), function($value) {
-            return $value !== null;
-        });
+        // Build update data manually to handle boolean false values correctly
+        $updateData = [];
+        foreach ($request->all() as $key => $value) {
+            // Only exclude null values, keep false/0/empty string
+            if ($value !== null) {
+                $updateData[$key] = $value;
+            }
+        }
 
         $productModel->update($updateData);
 

@@ -31,19 +31,24 @@
           <p class="text-sm text-gray-600">Sign in to continue to Gators DC</p>
         </div>
 
-        <!-- Error Message -->
-        <transition name="shake">
-          <div v-if="error" class="error-message bg-red-50 border-l-4 border-red-500 text-red-700 px-3 py-2 rounded mb-4 text-sm">
+        <!-- Error Alert -->
+        <div v-if="error" class="mb-6 bg-red-100 border-2 border-red-400 text-red-800 px-4 py-3 rounded-lg shadow-lg">
+          <div class="flex items-center justify-between">
             <div class="flex items-center">
-              <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+              <svg class="w-6 h-6 mr-3 text-red-600" fill="currentColor" viewBox="0 0 20 20">
                 <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
               </svg>
-              {{ error }}
+              <span class="font-semibold text-sm">{{ error }}</span>
             </div>
+            <button @click="error = null" type="button" class="text-red-600 hover:text-red-800">
+              <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+              </svg>
+            </button>
           </div>
-        </transition>
+        </div>
 
-        <!-- Form -->
+        <!-- Login Form -->
         <form @submit.prevent="handleLogin" class="space-y-4">
           <div class="input-group">
             <label class="block text-xs font-medium text-gray-700 mb-1">Email Address</label>
@@ -51,6 +56,7 @@
               v-model="form.email" 
               type="email" 
               required
+              autocomplete="email"
               class="input-field text-sm"
               placeholder="Enter your email"
               @focus="focusedField = 'email'"
@@ -65,6 +71,7 @@
                 v-model="form.password" 
                 :type="showPassword ? 'text' : 'password'"
                 required
+                autocomplete="current-password"
                 class="input-field pr-10 text-sm"
                 placeholder="Enter your password"
                 @focus="focusedField = 'password'"
@@ -91,11 +98,11 @@
               <input type="checkbox" class="rounded border-gray-300 text-primary-600 focus:ring-primary-500 w-3 h-3">
               <span class="ml-2 text-gray-600">Remember me</span>
             </label>
-            <a href="#" class="text-primary-600 hover:text-primary-700 font-medium">Forgot password?</a>
+            <button type="button" @click.prevent class="text-primary-600 hover:text-primary-700 font-medium">Forgot password?</button>
           </div>
 
           <button 
-            type="submit" 
+            type="submit"
             :disabled="loading"
             class="submit-button w-full bg-gradient-to-r from-primary-600 to-primary-700 text-white font-semibold py-2.5 px-6 rounded-lg shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none text-sm"
           >
@@ -137,7 +144,7 @@
           </div>
 
           <div class="mt-4 flex justify-center">
-            <button class="social-button w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-lg shadow-sm bg-white text-xs font-medium text-gray-700 hover:bg-gray-50 transition-colors">
+            <button type="button" @click.prevent class="social-button w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-lg shadow-sm bg-white text-xs font-medium text-gray-700 hover:bg-gray-50 transition-colors">
               <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M12.48 10.92v3.28h7.84c-.24 1.84-.853 3.187-1.787 4.133-1.147 1.147-2.933 2.4-6.053 2.4-4.827 0-8.6-3.893-8.6-8.72s3.773-8.72 8.6-8.72c2.6 0 4.507 1.027 5.907 2.347l2.307-2.307C18.747 1.44 16.133 0 12.48 0 5.867 0 .307 5.387.307 12s5.56 12 12.173 12c3.573 0 6.267-1.173 8.373-3.36 2.16-2.16 2.84-5.213 2.84-7.667 0-.76-.053-1.467-.173-2.053H12.48z"/>
               </svg>
@@ -174,30 +181,32 @@ const handleLogin = async () => {
   try {
     await authStore.login(form.value)
     
-    console.log('Login successful:', {
-      token: authStore.token,
-      user: authStore.user,
-      isAuthenticated: authStore.isAuthenticated,
-      localStorage: {
-        token: localStorage.getItem('token'),
-        user: localStorage.getItem('user')
-      }
-    })
-    
-    // Wait a tiny bit for store to fully update
+    // Wait for store to update
     await new Promise(resolve => setTimeout(resolve, 100))
     
     // Role-based redirect
     if (authStore.isAdmin) {
-      console.log('Redirecting to admin dashboard')
       router.push('/admin')
     } else {
-      console.log('Redirecting to home page')
       router.push('/')
     }
   } catch (err) {
-    console.error('Login error:', err)
-    error.value = err.response?.data?.message || 'Invalid credentials'
+    // Set error message based on response
+    let errorMessage = 'An error occurred during login.'
+    
+    if (err.response?.status === 401) {
+      errorMessage = 'Invalid email or password. Please check your credentials and try again.'
+    } else if (err.response?.status === 422) {
+      errorMessage = err.response?.data?.message || 'Please enter valid email and password.'
+    } else if (err.response?.status === 429) {
+      errorMessage = 'Too many login attempts. Please try again later.'
+    } else if (!err.response) {
+      errorMessage = 'Unable to connect to server. Please check your internet connection.'
+    } else {
+      errorMessage = err.response?.data?.message || 'Login failed. Please try again.'
+    }
+    
+    error.value = errorMessage
   } finally {
     loading.value = false
   }
@@ -205,6 +214,17 @@ const handleLogin = async () => {
 </script>
 
 <style scoped>
+/* Error message animation */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
 /* Floating background circles animation */
 .floating-circle {
   position: absolute;
@@ -276,6 +296,17 @@ const handleLogin = async () => {
   to {
     opacity: 1;
   }
+}
+
+/* Error message transition */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
 }
 
 /* Logo animation */
