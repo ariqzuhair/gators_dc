@@ -5,16 +5,13 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json'
-  }
+  },
+  withCredentials: true // Enable cookies for Sanctum
 })
 
-// Request interceptor to add auth token
+// Request interceptor - no longer needed for token
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('token')
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`
-    }
     return config
   },
   (error) => {
@@ -37,7 +34,7 @@ api.interceptors.response.use(
     // Let the login page handle its own 401 errors
     if (error.response?.status === 401 && !error.config?.url?.includes('/login')) {
       console.log('401 Unauthorized - Redirecting to login')
-      localStorage.removeItem('token')
+      // Clear any stored data
       localStorage.removeItem('user')
       window.location.href = '/auth/login'
     }
