@@ -4,6 +4,8 @@ export default {
     "./index.html",
     "./src/**/*.{vue,js,ts,jsx,tsx}",
   ],
+  // Enable JIT mode for faster builds and smaller CSS
+  mode: 'jit',
   theme: {
     extend: {
       colors: {
@@ -35,4 +37,26 @@ export default {
     },
   },
   plugins: [],
+  // Optimize for production
+  future: {
+    hoverOnlyWhenSupported: true,
+  },
+  // Purge unused CSS in production
+  purge: {
+    enabled: process.env.NODE_ENV === 'production',
+    content: [
+      "./index.html",
+      "./src/**/*.{vue,js,ts,jsx,tsx}",
+    ],
+    options: {
+      safelist: [
+        'lazy-loading',
+        'lazy-loaded',
+        'lazy-error',
+        /^bg-/,
+        /^text-/,
+        /^hover:/,
+      ]
+    }
+  }
 }

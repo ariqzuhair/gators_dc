@@ -14,34 +14,37 @@ const router = createRouter({
         {
           path: '',
           name: 'home',
-          component: () => import('@/views/HomePage.vue')
+          // Lazy load with prefetch for faster navigation
+          component: () => import(/* webpackChunkName: "home", webpackPrefetch: true */ '@/views/HomePage.vue')
         },
         {
           path: 'sessions',
           name: 'sessions',
-          component: () => import('@/views/SessionsPage.vue')
+          // Lazy load - frequently accessed
+          component: () => import(/* webpackChunkName: "sessions", webpackPrefetch: true */ '@/views/SessionsPage.vue')
         },
         {
           path: 'sessions/:id',
           name: 'session-detail',
-          component: () => import('@/views/SessionDetailPage.vue')
+          // Lazy load with preload (needed after sessions page)
+          component: () => import(/* webpackChunkName: "session-detail", webpackPreload: true */ '@/views/SessionDetailPage.vue')
         },
         {
           path: 'players',
           name: 'players',
-          component: () => import('@/views/PlayersPage.vue'),
+          component: () => import(/* webpackChunkName: "players" */ '@/views/PlayersPage.vue'),
           meta: { requiresAuth: true }
         },
         {
           path: 'profile',
           name: 'profile',
-          component: () => import('@/views/ProfilePage.vue'),
+          component: () => import(/* webpackChunkName: "profile", webpackPrefetch: true */ '@/views/ProfilePage.vue'),
           meta: { requiresAuth: true }
         },
         {
           path: 'merchandise',
           name: 'merchandise',
-          component: () => import('@/views/MerchandisePage.vue')
+          component: () => import(/* webpackChunkName: "merchandise", webpackPrefetch: true */ '@/views/MerchandisePage.vue')
         }
       ]
     },
@@ -52,7 +55,7 @@ const router = createRouter({
         {
           path: '',
           name: 'admin',
-          component: () => import('@/views/AdminDashboard.vue'),
+          component: () => import(/* webpackChunkName: "admin-dashboard" */ '@/views/AdminDashboard.vue'),
           meta: { requiresAuth: true, requiresAdmin: true }
         }
       ]
@@ -64,12 +67,12 @@ const router = createRouter({
         {
           path: 'login',
           name: 'login',
-          component: () => import('@/views/auth/LoginPage.vue')
+          component: () => import(/* webpackChunkName: "auth-login" */ '@/views/auth/LoginPage.vue')
         },
         {
           path: 'register',
           name: 'register',
-          component: () => import('@/views/auth/RegisterPage.vue')
+          component: () => import(/* webpackChunkName: "auth-register" */ '@/views/auth/RegisterPage.vue')
         }
       ]
     }

@@ -34,7 +34,7 @@
         </div>
 
         <!-- Profile Content -->
-        <div v-else class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div v-else-if="user" class="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <!-- Left Column - Account Info -->
           <div class="lg:col-span-2 space-y-6">
             <!-- Account Information Card -->

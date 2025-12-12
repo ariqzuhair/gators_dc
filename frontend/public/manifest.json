@@ -1,0 +1,19 @@
+{
+  "name": "Gators Dodgeball Club",
+  "short_name": "Gators DC",
+  "description": "Dodgeball club management system for sessions, memberships, and merchandise",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#dc2626",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["sports", "lifestyle"]
+}

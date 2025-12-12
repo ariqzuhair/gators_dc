@@ -1,209 +1,251 @@
 <template>
-  <div class="container mx-auto px-4 py-8">
-    <div v-if="loading" class="text-center py-12">
-      <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
-    </div>
+  <div class="min-h-screen bg-gradient-to-br from-gray-50 to-primary-50/20">
+    <div class="container mx-auto px-4 lg:px-6 py-6 md:py-10">
+      <!-- Loading State -->
+      <div v-if="loading" class="text-center py-20">
+        <div class="inline-block animate-spin rounded-full h-16 w-16 border-4 border-primary-200 border-t-primary-600"></div>
+        <p class="mt-4 text-gray-600 text-lg">Loading session details...</p>
+      </div>
 
-    <div v-else-if="error" class="text-center py-12 text-red-600">
-      {{ error }}
-    </div>
-
-    <div v-else-if="session" class="max-w-4xl mx-auto">
-      <!-- Back Button -->
-      <button @click="goBack" class="mb-6 flex items-center text-gray-600 hover:text-gray-900">
-        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-        </svg>
-        Back to Sessions
-      </button>
-
-      <div class="card">
-        <!-- Header -->
-        <div class="mb-6">
-          <div class="flex items-start justify-between mb-4">
-            <div class="flex-1">
-              <h1 class="text-3xl font-bold text-gray-900 mb-3">{{ session.title }}</h1>
-              <span class="badge text-base" :class="getTypeBadgeClass(session.type)">
-                {{ session.type }}
-              </span>
-            </div>
-            <div v-if="session.is_active" class="text-right">
-              <span class="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium">
-                Active
-              </span>
-            </div>
-          </div>
-          <p v-if="session.description" class="text-gray-600 text-lg">{{ session.description }}</p>
+      <!-- Error State -->
+      <div v-else-if="error" class="text-center py-20">
+        <div class="inline-flex items-center justify-center w-16 h-16 bg-red-100 rounded-full mb-4">
+          <svg class="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
         </div>
+        <p class="text-red-600 text-lg">{{ error }}</p>
+      </div>
 
-        <!-- Session Details Grid -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-          <!-- Date -->
-          <div class="flex items-start">
-            <svg class="w-6 h-6 mr-3 text-primary-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+      <div v-else-if="session" class="max-w-5xl mx-auto">
+        <!-- Back Button -->
+        <button @click="goBack" class="mb-6 flex items-center text-gray-600 hover:text-gray-900 transition-colors group">
+          <div class="w-8 h-8 flex items-center justify-center rounded-lg bg-white border border-gray-200 group-hover:border-primary-300 group-hover:bg-primary-50 mr-2 transition-all">
+            <svg class="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
             </svg>
-            <div>
-              <p class="text-sm text-gray-500 font-medium">Date</p>
-              <p class="text-gray-900 font-semibold">{{ formatDate(session.date) }}</p>
+          </div>
+          <span class="font-medium">Back to Sessions</span>
+        </button>
+
+        <!-- Main Session Card -->
+        <div class="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
+          <!-- Hero Header with Gradient -->
+          <div class="bg-gradient-to-r from-primary-600 to-primary-700 px-6 py-8 text-white">
+            <div class="flex items-start justify-between mb-3">
+              <div class="flex-1">
+                <span class="inline-block px-3 py-1 bg-white/20 backdrop-blur-sm rounded-full text-xs md:text-sm font-medium mb-3">
+                  {{ session.type }}
+                </span>
+                <h1 class="text-2xl md:text-3xl lg:text-4xl font-bold mb-2">{{ session.title }}</h1>
+                <p v-if="session.description" class="text-primary-50 text-sm md:text-base max-w-3xl">{{ session.description }}</p>
+              </div>
+              <div v-if="session.is_active" class="text-right">
+                <span class="inline-flex items-center px-4 py-2 bg-green-500 text-white rounded-full text-sm font-semibold shadow-lg">
+                  <span class="w-2 h-2 bg-white rounded-full mr-2 animate-pulse"></span>
+                  Active
+                </span>
+              </div>
             </div>
           </div>
 
-          <!-- Time -->
-          <div class="flex items-start">
-            <svg class="w-6 h-6 mr-3 text-primary-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <div>
-              <p class="text-sm text-gray-500 font-medium">Time</p>
-              <p class="text-gray-900 font-semibold">{{ formatTime(session.start_time) }} - {{ formatTime(session.end_time) }}</p>
-            </div>
-          </div>
+          <div class="p-8">
+            <!-- Session Details Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 mb-6 md:mb-8">
+              <!-- Date -->
+              <div class="flex items-start p-3 md:p-4 bg-gradient-to-br from-primary-50 to-white rounded-xl border border-primary-100">
+                <div class="w-10 h-10 md:w-12 md:h-12 bg-primary-600 rounded-xl flex items-center justify-center mr-3 flex-shrink-0 shadow-lg">
+                  <svg class="w-5 h-5 md:w-6 md:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                </div>
+                <div>
+                  <p class="text-sm text-gray-600 font-medium mb-1">Date</p>
+                  <p class="text-gray-900 font-bold text-lg">{{ formatDate(session.date) }}</p>
+                </div>
+              </div>
 
-          <!-- Location -->
-          <div class="flex items-start">
-            <svg class="w-6 h-6 mr-3 text-primary-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-            </svg>
-            <div>
-              <p class="text-sm text-gray-500 font-medium">Location</p>
-              <p class="text-gray-900 font-semibold">{{ session.location }}</p>
-            </div>
-          </div>
+              <!-- Time -->
+              <div class="flex items-start p-4 bg-gradient-to-br from-primary-50 to-white rounded-xl border border-primary-100">
+                <div class="w-12 h-12 bg-primary-600 rounded-xl flex items-center justify-center mr-4 flex-shrink-0 shadow-lg">
+                  <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <div>
+                  <p class="text-sm text-gray-600 font-medium mb-1">Time</p>
+                  <p class="text-gray-900 font-bold text-lg">{{ formatTime(session.start_time) }} - {{ formatTime(session.end_time) }}</p>
+                </div>
+              </div>
 
-          <!-- Participants -->
-          <div class="flex items-start">
-            <svg class="w-6 h-6 mr-3 text-primary-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-            </svg>
-            <div>
-              <p class="text-sm text-gray-500 font-medium">Participants</p>
-              <p class="text-gray-900 font-semibold">
-                {{ session.current_participants || 0 }} / {{ session.max_participants }}
-                <span v-if="isFull" class="text-red-600 text-sm ml-2">(Full)</span>
-                <span v-else class="text-green-600 text-sm ml-2">({{ spotsLeft }} spots left)</span>
-              </p>
-            </div>
-          </div>
-        </div>
+              <!-- Location -->
+              <div class="flex items-start p-4 bg-gradient-to-br from-primary-50 to-white rounded-xl border border-primary-100">
+                <div class="w-12 h-12 bg-primary-600 rounded-xl flex items-center justify-center mr-4 flex-shrink-0 shadow-lg">
+                  <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                </div>
+                <div>
+                  <p class="text-sm text-gray-600 font-medium mb-1">Location</p>
+                  <p class="text-gray-900 font-bold text-lg">{{ session.location }}</p>
+                </div>
+              </div>
 
-        <!-- Registration Section -->
-        <div v-if="isAuthenticated" class="pt-6 border-t border-gray-200">
-          <!-- Membership Status Info -->
-          <div v-if="showMembershipInfo" class="mb-4 p-4 border rounded-lg" :class="hasActiveMembership ? 'bg-green-50 border-green-200' : 'bg-yellow-50 border-yellow-200'">
-            <div class="flex items-start">
-              <svg v-if="hasActiveMembership" class="w-5 h-5 text-green-600 mr-2 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <svg v-else class="w-5 h-5 text-yellow-600 mr-2 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <div>
-                <p v-if="hasActiveMembership" class="text-green-800 font-medium">
-                  You have an active membership - Registration is free!
-                </p>
-                <div v-else>
-                  <p class="text-yellow-800 font-medium mb-2">
-                    No active membership - Drop-in fee: RM 3.00
+              <!-- Participants -->
+              <div class="flex items-start p-4 bg-gradient-to-br from-primary-50 to-white rounded-xl border border-primary-100">
+                <div class="w-12 h-12 bg-primary-600 rounded-xl flex items-center justify-center mr-4 flex-shrink-0 shadow-lg">
+                  <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                  </svg>
+                </div>
+                <div>
+                  <p class="text-sm text-gray-600 font-medium mb-1">Participants</p>
+                  <p class="text-gray-900 font-bold text-lg">
+                    {{ session.current_participants || 0 }} / {{ session.max_participants }}
                   </p>
-                  <p class="text-yellow-700 text-sm">
-                    You'll need to upload a payment receipt to complete registration.
-                  </p>
-                  <p class="text-yellow-700 text-sm mt-1">
-                    💡 <strong>Tip:</strong> A semester membership (RM 15) gives you unlimited access to all sessions!
-                  </p>
+                  <span v-if="isFull" class="inline-block px-2 py-0.5 bg-red-100 text-red-700 text-xs font-semibold rounded-full mt-1">Full</span>
+                  <span v-else class="inline-block px-2 py-0.5 bg-green-100 text-green-700 text-xs font-semibold rounded-full mt-1">{{ spotsLeft }} spots left</span>
                 </div>
               </div>
             </div>
-          </div>
 
-          <!-- Success Message -->
-          <div v-if="registrationSuccess" class="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
-            <div class="flex items-center">
-              <svg class="w-5 h-5 text-green-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            <!-- Registration Section -->
+            <div v-if="isAuthenticated" class="pt-6 border-t border-gray-200">
+              <!-- Membership Status Info -->
+              <div v-if="showMembershipInfo" class="mb-4 p-5 border-2 rounded-xl" :class="hasActiveMembership ? 'bg-gradient-to-br from-green-50 to-green-100/50 border-green-300' : 'bg-gradient-to-br from-yellow-50 to-yellow-100/50 border-yellow-300'">
+                <div class="flex items-start">
+                  <svg v-if="hasActiveMembership" class="w-6 h-6 text-green-600 mr-3 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <svg v-else class="w-6 h-6 text-yellow-600 mr-3 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <div>
+                    <p v-if="hasActiveMembership" class="text-green-900 font-semibold text-lg">
+                      You have an active membership - Registration is free!
+                    </p>
+                    <div v-else>
+                      <p class="text-yellow-900 font-semibold text-lg mb-2">
+                        No active membership - Drop-in fee: RM 3.00
+                      </p>
+                      <p class="text-yellow-800 text-sm">
+                        You'll need to upload a payment receipt to complete registration.
+                      </p>
+                      <p class="text-yellow-800 text-sm mt-2 font-medium">
+                        💡 <strong>Tip:</strong> A semester membership (RM 15) gives you unlimited access to all sessions!
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Success Message -->
+              <div v-if="registrationSuccess" class="mb-4 p-5 bg-gradient-to-br from-green-50 to-green-100/50 border-2 border-green-300 rounded-xl">
+                <div class="flex items-center">
+                  <svg class="w-6 h-6 text-green-600 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <div>
+                    <p class="text-green-900 font-semibold text-lg">{{ registrationSuccessMessage }}</p>
+                    <p v-if="requiresPaymentVerification" class="text-green-800 text-sm mt-1">
+                      Your registration is pending payment verification by an admin.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Error Message -->
+              <div v-if="registrationError" class="mb-4 p-5 bg-gradient-to-br from-red-50 to-red-100/50 border-2 border-red-300 rounded-xl">
+                <div class="flex items-center">
+                  <svg class="w-6 h-6 text-red-600 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <p class="text-red-900 font-semibold">{{ registrationError }}</p>
+                </div>
+              </div>
+
+              <!-- Registration Button -->
+              <button 
+                @click="initiateRegistration"
+                :disabled="isFull || isRegistering || alreadyRegistered"
+                class="w-full md:w-auto px-8 py-4 text-lg font-semibold rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
+                :class="{ 
+                  'opacity-50 cursor-not-allowed': isFull || isRegistering, 
+                  'bg-gradient-to-r from-green-500 to-green-600 text-white': alreadyRegistered,
+                  'bg-gradient-to-r from-primary-600 to-primary-700 text-white hover:from-primary-700 hover:to-primary-800': !alreadyRegistered && !isFull && !isRegistering,
+                  'bg-gray-300 text-gray-600': isFull
+                }"
+              >
+                <span v-if="isRegistering" class="flex items-center justify-center">
+                  <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Registering...
+                </span>
+                <span v-else-if="alreadyRegistered" class="flex items-center justify-center">
+                  <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  Already Registered
+                </span>
+                <span v-else-if="isFull">Session Full</span>
+                <span v-else>Register for Session</span>
+              </button>
+            </div>
+            <div v-else class="pt-6 border-t border-gray-200">
+              <p class="text-gray-600 mb-4 text-lg">Please log in to register for this session.</p>
+              <router-link to="/auth/login" class="inline-block px-8 py-4 bg-gradient-to-r from-primary-600 to-primary-700 text-white font-semibold rounded-xl hover:from-primary-700 hover:to-primary-800 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105">
+                Log In
+              </router-link>
+            </div>
+          </div>
+        </div>
+
+        <!-- Registered Players Section -->
+        <div v-if="session.registrations && session.registrations.length > 0" class="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-100 mt-8 p-8">
+          <div class="flex items-center mb-6">
+            <div class="w-12 h-12 bg-gradient-to-br from-primary-600 to-primary-700 rounded-xl flex items-center justify-center mr-4 shadow-lg">
+              <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
               </svg>
-              <div>
-                <p class="text-green-800 font-medium">{{ registrationSuccessMessage }}</p>
-                <p v-if="requiresPaymentVerification" class="text-green-700 text-sm mt-1">
-                  Your registration is pending payment verification by an admin.
-                </p>
-              </div>
             </div>
+            <h2 class="text-3xl font-bold text-gray-900">Registered Players <span class="text-primary-600">({{ session.registrations.length }})</span></h2>
           </div>
 
-          <!-- Error Message -->
-          <div v-if="registrationError" class="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-            <div class="flex items-center">
-              <svg class="w-5 h-5 text-red-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <p class="text-red-800">{{ registrationError }}</p>
-            </div>
-          </div>
-
-          <!-- Registration Button -->
-          <button 
-            @click="initiateRegistration"
-            :disabled="isFull || isRegistering || alreadyRegistered"
-            class="btn btn-primary w-full md:w-auto px-8 py-3 text-lg"
-            :class="{ 'opacity-50 cursor-not-allowed': isFull || isRegistering || alreadyRegistered, 'bg-green-600': alreadyRegistered }"
-          >
-            <span v-if="isRegistering">Registering...</span>
-            <span v-else-if="alreadyRegistered">✓ Already Registered</span>
-            <span v-else-if="isFull">Session Full</span>
-            <span v-else>Register for Session</span>
-          </button>
-        </div>
-        <div v-else class="pt-6 border-t border-gray-200">
-          <p class="text-gray-600 mb-4">Please log in to register for this session.</p>
-          <router-link to="/auth/login" class="btn btn-primary">
-            Log In
-          </router-link>
-        </div>
-      </div>
-
-      <!-- Registered Players Section -->
-      <div v-if="session.registrations && session.registrations.length > 0" class="card mt-6">
-        <div class="flex items-center mb-6">
-          <svg class="w-6 h-6 text-primary-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-          </svg>
-          <h2 class="text-2xl font-bold text-gray-900">Registered Players ({{ session.registrations.length }})</h2>
-        </div>
-
-        <div class="space-y-3">
-          <div 
-            v-for="registration in session.registrations" 
-            :key="registration._id"
-            class="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
-          >
-            <div class="flex items-center">
-              <div class="w-10 h-10 bg-primary-600 rounded-full flex items-center justify-center text-white font-bold mr-3">
-                {{ getInitials(registration.player?.user?.name || 'Unknown') }}
-              </div>
-              <div>
-                <p class="font-semibold text-gray-900">{{ registration.player?.user?.name || 'Unknown Player' }}</p>
-                <p class="text-sm text-gray-500">Registered on {{ formatRegistrationDate(registration.registration_date) }}</p>
-              </div>
-            </div>
-            <span 
-              :class="{
-                'bg-green-100 text-green-800': registration.status === 'registered',
-                'bg-gray-100 text-gray-800': registration.status === 'cancelled',
-                'bg-blue-100 text-blue-800': registration.status === 'completed'
-              }"
-              class="px-3 py-1 rounded-full text-sm font-medium"
+          <div class="space-y-3">
+            <div 
+              v-for="registration in session.registrations" 
+              :key="registration._id"
+              class="flex items-center justify-between p-4 bg-gradient-to-r from-gray-50 to-white rounded-xl border border-gray-200 hover:border-primary-200 hover:shadow-md transition-all duration-200"
             >
-              {{ registration.status }}
-            </span>
+              <div class="flex items-center">
+                <div class="w-12 h-12 bg-gradient-to-br from-primary-600 to-primary-700 rounded-full flex items-center justify-center text-white font-bold mr-4 shadow-lg">
+                  {{ getInitials(registration.player?.user?.name || 'Unknown') }}
+                </div>
+                <div>
+                  <p class="font-bold text-gray-900">{{ registration.player?.user?.name || 'Unknown Player' }}</p>
+                  <p class="text-sm text-gray-600">Registered on {{ formatRegistrationDate(registration.registration_date) }}</p>
+                </div>
+              </div>
+              <span 
+                :class="{
+                  'bg-green-100 text-green-800 border-green-200': registration.status === 'registered',
+                  'bg-gray-100 text-gray-800 border-gray-200': registration.status === 'cancelled',
+                  'bg-blue-100 text-blue-800 border-blue-200': registration.status === 'completed'
+                }"
+                class="px-4 py-1.5 rounded-full text-sm font-semibold border"
+              >
+                {{ registration.status }}
+              </span>
+            </div>
           </div>
         </div>
       </div>
-    </div>
+      </div>
 
-    <!-- Payment Modal for Non-Members -->
+      <!-- Payment Modal for Non-Members -->
     <div v-if="showPaymentModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div class="bg-white rounded-lg max-w-md w-full p-6">
         <h3 class="text-xl font-bold text-gray-900 mb-4">Drop-in Session Payment</h3>

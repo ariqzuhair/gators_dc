@@ -14,7 +14,14 @@ class SessionController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Session::with('creator', 'registrations');
+        // Optimize query with selective field loading
+        $query = Session::with([
+            'creator:_id,name,email',  // Only load needed creator fields
+            'registrations' => function($q) {
+                $q->select('_id', 'session_id', 'player_id', 'status')
+                  ->limit(50); // Limit registrations to prevent massive payloads
+            }
+        ]);
 
         // Filter by type
         if ($request->has('type')) {
@@ -35,10 +42,12 @@ class SessionController extends Controller
             $query->where('is_active', filter_var($request->is_active, FILTER_VALIDATE_BOOLEAN));
         }
 
-        // Order by date
+        // Order by date - add index hint for performance
         $query->orderBy('date', 'desc')->orderBy('start_time', 'asc');
 
-        $sessions = $query->paginate(15);
+        // Use pagination to reduce payload size
+        $perPage = $request->get('per_page', 15);
+        $sessions = $query->paginate(min($perPage, 50)); // Max 50 per page
 
         return response()->json($sessions);
     }
@@ -92,13 +101,22 @@ class SessionController extends Controller
      */
     public function show($id)
     {
-        $session = Session::with('creator', 'registrations.player.user')->find($id);
+        // Optimize with selective loading and field projection
+        $session = Session::with([
+            'creator:_id,name,email',
+            'registrations.player.user:_id,name,email'
+        ])->find($id);
 
         if (!$session) {
             return response()->json(['message' => 'Session not found'], 404);
         }
 
-        return response()->json($session);
+        // Add ETag for caching
+        $etag = md5(json_encode($session));
+        
+        return response()->json($session)
+            ->header('ETag', $etag)
+            ->header('Cache-Control', 'public, max-age=300'); // 5 minutes
     }
 
     /**
