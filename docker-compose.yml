@@ -16,6 +16,20 @@ services:
     networks:
       - gators_network
 
+  # Redis Cache & Session Storage
+  redis:
+    image: redis:7-alpine
+    container_name: gators_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+      - ./docker/redis/redis.conf:/usr/local/etc/redis/redis.conf
+    networks:
+      - gators_network
+    command: redis-server /usr/local/etc/redis/redis.conf
+
   # Laravel Backend
   backend:
     build:
@@ -36,8 +50,13 @@ services:
       DB_DATABASE: gators_dc
       DB_USERNAME: admin
       DB_PASSWORD: admin123
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      CACHE_DRIVER: redis
+      SESSION_DRIVER: redis
     depends_on:
       - mongodb
+      - redis
     networks:
       - gators_network
     command: php artisan serve --host=0.0.0.0 --port=8000
@@ -84,4 +103,6 @@ networks:
 
 volumes:
   mongodb_data:
+    driver: local
+  redis_data:
     driver: local

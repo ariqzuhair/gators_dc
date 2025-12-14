@@ -81,8 +81,27 @@ class PersonalAccessToken extends Model implements HasAbilities
         [$id, $token] = explode('|', $token, 2);
 
         if ($instance = static::find($id)) {
-            return hash_equals($instance->token, hash('sha256', $token)) ? $instance : null;
+            // Check if token matches and is not expired
+            if (hash_equals($instance->token, hash('sha256', $token))) {
+                // Check if token has expired
+                if ($instance->expires_at && $instance->expires_at->isPast()) {
+                    return null; // Token has expired
+                }
+                return $instance;
+            }
         }
+        
+        return null;
+    }
+
+    /**
+     * Check if the token has expired.
+     *
+     * @return bool
+     */
+    public function isExpired()
+    {
+        return $this->expires_at && $this->expires_at->isPast();
     }
 
     /**

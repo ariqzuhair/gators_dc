@@ -141,16 +141,22 @@ const upcomingSessions = ref([])
 const loading = ref(false)
 const error = ref(null)
 const userRegistrations = ref([])
+const loadingRegistrations = ref(false)
 
 const isAuthenticated = computed(() => authStore.isAuthenticated)
 const user = computed(() => authStore.user)
 
 onMounted(async () => {
   console.log('HomePage mounted - isAuthenticated:', authStore.isAuthenticated)
-  await fetchUpcomingSessions()
+  
+  // Load sessions and registrations in parallel
+  const promises = [fetchUpcomingSessions()]
+  
   if (isAuthenticated.value) {
-    await fetchUserRegistrations()
+    promises.push(fetchUserRegistrations())
   }
+  
+  await Promise.all(promises)
 })
 
 const fetchUpcomingSessions = async () => {
@@ -173,30 +179,39 @@ const fetchUpcomingSessions = async () => {
 }
 
 const fetchUserRegistrations = async () => {
+  if (!user.value?._id) return
+  
+  loadingRegistrations.value = true
   try {
     const token = localStorage.getItem('token')
+    if (!token) return
     
-    // Get player profile
-    const playersResponse = await axios.get(`${API_URL}/players`, {
-      headers: { 'Authorization': `Bearer ${token}` }
-    })
+    // Get both player and registrations in parallel
+    const [playersResponse, registrationsResponse] = await Promise.all([
+      axios.get(`${API_URL}/players`, {
+        headers: { 'Authorization': `Bearer ${token}` },
+        params: { user_id: user.value._id }
+      }),
+      axios.get(`${API_URL}/registrations`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+    ])
     
     const players = playersResponse.data.data || playersResponse.data
     const playersArray = Array.isArray(players) ? players : []
     const userPlayer = playersArray.find(p => p.user_id === user.value._id)
     
     if (userPlayer) {
-      // Get user's registrations
-      const registrationsResponse = await axios.get(`${API_URL}/registrations`, {
-        params: { player_id: userPlayer._id },
-        headers: { 'Authorization': `Bearer ${token}` }
-      })
-      
       const registrations = registrationsResponse.data.data || registrationsResponse.data
-      userRegistrations.value = Array.isArray(registrations) ? registrations : []
+      const registrationsArray = Array.isArray(registrations) ? registrations : []
+      
+      // Filter registrations for this player
+      userRegistrations.value = registrationsArray.filter(r => r.player_id === userPlayer._id)
     }
   } catch (err) {
     console.error('Error fetching user registrations:', err)
+  } finally {
+    loadingRegistrations.value = false
   }
 }
 

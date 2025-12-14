@@ -52,6 +52,7 @@ class AuthController extends Controller
             'name' => 'auth_token',
             'token' => $hashedToken,
             'abilities' => ['*'],
+            'expires_at' => now()->addDays(7), // Token expires in 7 days
         ]);
         $accessToken->save();
         
@@ -106,6 +107,7 @@ class AuthController extends Controller
             'name' => 'auth_token',
             'token' => $hashedToken,
             'abilities' => ['*'],
+            'expires_at' => now()->addDays(7), // Token expires in 7 days
         ]);
         $accessToken->save();
         
