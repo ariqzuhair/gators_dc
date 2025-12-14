@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Session;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Cache;
 
 class SessionController extends Controller
 {
@@ -14,42 +15,46 @@ class SessionController extends Controller
      */
     public function index(Request $request)
     {
-        // Optimize query with selective field loading
-        $query = Session::with([
-            'creator:_id,name,email',  // Only load needed creator fields
-            'registrations' => function($q) {
-                $q->select('_id', 'session_id', 'player_id', 'status')
-                  ->limit(50); // Limit registrations to prevent massive payloads
+        // Create cache key based on filters
+        $cacheKey = 'sessions_' . md5(json_encode($request->all()));
+        
+        // Try to get from cache (5 minutes)
+        return Cache::remember($cacheKey, 300, function () use ($request) {
+            // Optimize query with selective field loading
+            $query = Session::with([
+                'creator:_id,name,email',  // Only load needed creator fields
+                'registrations' => function($q) {
+                    $q->select('_id', 'session_id', 'player_id', 'status')
+                      ->limit(50); // Limit registrations to prevent massive payloads
+                }
+            ]);
+
+            // Filter by type
+            if ($request->has('type')) {
+                $query->where('type', $request->type);
             }
-        ]);
 
-        // Filter by type
-        if ($request->has('type')) {
-            $query->where('type', $request->type);
-        }
+            // Filter by date range
+            if ($request->has('start_date')) {
+                $query->where('date', '>=', $request->start_date);
+            }
 
-        // Filter by date range
-        if ($request->has('start_date')) {
-            $query->where('date', '>=', $request->start_date);
-        }
+            if ($request->has('end_date')) {
+                $query->where('date', '<=', $request->end_date);
+            }
 
-        if ($request->has('end_date')) {
-            $query->where('date', '<=', $request->end_date);
-        }
+            // Filter by active status
+            if ($request->has('is_active')) {
+                $query->where('is_active', filter_var($request->is_active, FILTER_VALIDATE_BOOLEAN));
+            }
 
-        // Filter by active status
-        if ($request->has('is_active')) {
-            $query->where('is_active', filter_var($request->is_active, FILTER_VALIDATE_BOOLEAN));
-        }
+            // Order by date - add index hint for performance
+            $query->orderBy('date', 'desc')->orderBy('start_time', 'asc');
 
-        // Order by date - add index hint for performance
-        $query->orderBy('date', 'desc')->orderBy('start_time', 'asc');
-
-        // Use pagination to reduce payload size
-        $perPage = $request->get('per_page', 15);
-        $sessions = $query->paginate(min($perPage, 50)); // Max 50 per page
-
-        return response()->json($sessions);
+            // Use pagination to reduce payload size
+            $perPage = $request->get('per_page', 15);
+            return $query->paginate(min($perPage, 50)); // Max 50 per page
+        });
     }
 
     /**
@@ -89,6 +94,9 @@ class SessionController extends Controller
             'is_active' => $request->is_active ?? true,
             'created_by' => $request->user()->_id ?? null,
         ]);
+
+        // Clear sessions cache
+        Cache::tags(['sessions'])->flush();
 
         return response()->json([
             'message' => 'Session created successfully',
@@ -152,6 +160,10 @@ class SessionController extends Controller
 
         $session->update($updateData);
 
+        // Clear cache for this session and sessions list
+        Cache::forget('session_' . $id);
+        Cache::tags(['sessions'])->flush();
+
         return response()->json([
             'message' => 'Session updated successfully',
             'session' => $session
@@ -171,6 +183,10 @@ class SessionController extends Controller
 
         $session->delete();
 
+        // Clear cache
+        Cache::forget('session_' . $id);
+        Cache::tags(['sessions'])->flush();
+
         return response()->json(['message' => 'Session deleted successfully']);
     }
 
@@ -179,13 +195,14 @@ class SessionController extends Controller
      */
     public function upcoming()
     {
-        $sessions = Session::where('is_active', true)
-            ->where('date', '>=', now())
-            ->orderBy('date', 'asc')
-            ->orderBy('start_time', 'asc')
-            ->limit(10)
-            ->get();
-
-        return response()->json($sessions);
+        // Cache upcoming sessions for 2 minutes
+        return Cache::remember('sessions_upcoming', 120, function () {
+            return Session::where('is_active', true)
+                ->where('date', '>=', now())
+                ->orderBy('date', 'asc')
+                ->orderBy('start_time', 'asc')
+                ->limit(10)
+                ->get();
+        });
     }
 }

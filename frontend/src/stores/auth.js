@@ -1,31 +1,42 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import api from '@/services/api'
+import axios from 'axios'
 
 export const useAuthStore = defineStore('auth', () => {
   const user = ref(null)
-  const token = ref(null)
 
-  const isAuthenticated = computed(() => !!token.value)
+  const isAuthenticated = computed(() => !!user.value)
   const isAdmin = computed(() => user.value?.role === 'admin')
 
-  function checkAuth() {
-    const storedToken = localStorage.getItem('token')
+  async function checkAuth() {
     const storedUser = localStorage.getItem('user')
     
-    if (storedToken && storedUser) {
-      token.value = storedToken
+    if (storedUser) {
       user.value = JSON.parse(storedUser)
+    }
+
+    // Verify session with backend
+    try {
+      const response = await api.get('/me')
+      user.value = response.data
+      localStorage.setItem('user', JSON.stringify(user.value))
+    } catch (error) {
+      // Session expired or invalid
+      user.value = null
+      localStorage.removeItem('user')
     }
   }
 
   async function login(credentials) {
     try {
+      // Get CSRF cookie first
+      await axios.get('http://localhost:8001/sanctum/csrf-cookie', { withCredentials: true })
+      
+      // Then login
       const response = await api.post('/login', credentials)
-      token.value = response.data.token
       user.value = response.data.user
       
-      localStorage.setItem('token', token.value)
       localStorage.setItem('user', JSON.stringify(user.value))
       
       return response.data
@@ -36,6 +47,9 @@ export const useAuthStore = defineStore('auth', () => {
 
   async function register(userData) {
     try {
+      // Get CSRF cookie first
+      await axios.get('http://localhost:8001/sanctum/csrf-cookie', { withCredentials: true })
+      
       // Only send fields that the API expects
       const registrationData = {
         name: userData.name,
@@ -47,7 +61,8 @@ export const useAuthStore = defineStore('auth', () => {
       
       const response = await api.post('/register', registrationData)
       
-      // Don't store token after registration since we redirect to login
+      user.value = response.data.user
+      localStorage.setItem('user', JSON.stringify(user.value))
       // User will login with their credentials
       
       return response.data
@@ -56,16 +71,19 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  function logout() {
-    user.value = null
-    token.value = null
-    localStorage.removeItem('token')
-    localStorage.removeItem('user')
+  async function logout() {
+    try {
+      await api.post('/logout')
+    } catch (error) {
+      console.error('Logout error:', error)
+    } finally {
+      user.value = null
+      localStorage.removeItem('user')
+    }
   }
 
   return {
     user,
-    token,
     isAuthenticated,
     isAdmin,
     checkAuth,
